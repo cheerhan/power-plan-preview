@@ -53,6 +53,19 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Curve detail tokens */
+    --chart-charge: 210 80% 92%;
+    --chart-discharge: 30 80% 92%;
+    --chart-plan: 30 90% 55%;
+    --chart-plan-light: 30 80% 75%;
+    --chart-pv: 145 60% 45%;
+    --chart-pv-light: 145 50% 70%;
+    --status-success: 145 60% 42%;
+    --status-warning: 40 90% 50%;
+    --status-pending: 210 60% 55%;
+    --panel-border: 220 15% 90%;
+    --panel-bg: 220 20% 98%;
   }
 
   .dark {
