@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceArea } from 'recharts';
 import { TimePeriod, ChartPoint } from '@/types/curve';
-import { periodsToChartData, generateMockActual, ACTION_LABELS } from '@/lib/curve-utils';
+import { periodsToChartData, generateMockActual } from '@/lib/curve-utils';
+import { ACTION_LABELS } from '@/types/curve';
 
 interface Props {
   periods: TimePeriod[];
