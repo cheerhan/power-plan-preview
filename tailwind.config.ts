@@ -57,6 +57,23 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        chart: {
+          charge: "hsl(var(--chart-charge))",
+          discharge: "hsl(var(--chart-discharge))",
+          plan: "hsl(var(--chart-plan))",
+          "plan-light": "hsl(var(--chart-plan-light))",
+          pv: "hsl(var(--chart-pv))",
+          "pv-light": "hsl(var(--chart-pv-light))",
+        },
+        status: {
+          success: "hsl(var(--status-success))",
+          warning: "hsl(var(--status-warning))",
+          pending: "hsl(var(--status-pending))",
+        },
+        panel: {
+          border: "hsl(var(--panel-border))",
+          bg: "hsl(var(--panel-bg))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
