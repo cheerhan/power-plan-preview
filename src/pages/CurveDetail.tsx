@@ -1,18 +1,21 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import DetailHeader from '@/components/curve/DetailHeader';
 import PeriodConfigPanel from '@/components/curve/PeriodConfigPanel';
 import EnergyStorageChart from '@/components/curve/EnergyStorageChart';
 import PvChart from '@/components/curve/PvChart';
 import ActionBar from '@/components/curve/ActionBar';
+import DispatchHistory from '@/components/curve/DispatchHistory';
 import { TimePeriod, CurveDetail as CurveDetailType } from '@/types/curve';
-import { validatePeriods } from '@/lib/curve-utils';
+import { validatePeriods, isCurveEditable } from '@/lib/curve-utils';
 
-// Mock data
 const MOCK_DATA: CurveDetailType = {
   projectName: '示范储能电站一期',
-  curveDate: '2026-03-06',
+  curveDate: '2026-03-07',
   status: 'sent',
   lastSentAt: '2026-03-06 08:30:00',
   operator: '张工',
@@ -32,6 +35,10 @@ const CurveDetail = () => {
   const [periods, setPeriods] = useState<TimePeriod[]>(data.periods);
   const [savedPeriods, setSavedPeriods] = useState<TimePeriod[]>(data.periods);
   const [editing, setEditing] = useState(false);
+  const [autoDispatch, setAutoDispatch] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
+  const editable = useMemo(() => isCurveEditable(data.curveDate), [data.curveDate]);
 
   const tabs = useMemo(() => {
     const t = [{ key: 'storage', label: '储能计划限值' }];
@@ -56,9 +63,17 @@ const CurveDetail = () => {
     setEditing(false);
   }, [savedPeriods]);
 
-  const handleAction = (action: string) => {
-    toast({ title: action, description: `${action}操作已触发（演示）` });
-  };
+  const handleSend = useCallback(() => {
+    toast({ title: '下发成功', description: '曲线已下发至控制器（演示）' });
+  }, []);
+
+  const handleDelete = useCallback(() => {
+    toast({ title: '已删除', description: '曲线记录已删除（演示）' });
+  }, []);
+
+  const handleExport = useCallback(() => {
+    toast({ title: '导出曲线', description: `${data.projectName}_调度曲线_${data.curveDate.replace(/-/g, '')}.xlsx（演示）` });
+  }, [data.projectName, data.curveDate]);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -81,6 +96,24 @@ const CurveDetail = () => {
               <p className="text-xs text-muted-foreground">已配置光伏预测算法，数据由系统自动生成。</p>
             </div>
           )}
+
+          {/* Auto dispatch switch */}
+          <div className="flex items-center justify-between rounded-md border border-panel-border bg-panel-bg p-3">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">自动下发</Label>
+              <p className="text-xs text-muted-foreground">开启后系统每日自动下发次日曲线</p>
+            </div>
+            <Switch checked={autoDispatch} onCheckedChange={setAutoDispatch} />
+          </div>
+
+          {/* Dispatch history toggle */}
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="text-sm text-primary hover:underline"
+          >
+            {showHistory ? '收起下发记录' : '查看下发记录'}
+          </button>
+          {showHistory && <DispatchHistory />}
         </div>
 
         {/* Right chart area */}
@@ -115,12 +148,13 @@ const CurveDetail = () => {
 
       <ActionBar
         editing={editing}
+        editable={editable}
         onEdit={() => setEditing(true)}
         onSave={handleSave}
         onCancel={handleCancel}
-        onSend={() => handleAction('下发')}
-        onDelete={() => handleAction('删除')}
-        onExport={() => handleAction('导出曲线')}
+        onSend={handleSend}
+        onDelete={handleDelete}
+        onExport={handleExport}
       />
     </div>
   );
