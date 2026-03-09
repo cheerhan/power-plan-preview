@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Download, Plus, Filter } from 'lucide-react';
 import { useState, useMemo, useCallback } from 'react';
 import { CurveStatus, ProjectType } from '@/types/curve';
@@ -17,11 +18,19 @@ interface CurveRecord {
   projectName: string;
   projectType: ProjectType;
   curveDate: string;
-  storageStatus: CurveStatus | null; // null = project doesn't have this type
+  storageStatus: CurveStatus | null;
   pvStatus: CurveStatus | null;
   loadStatus: CurveStatus | null;
   lastSentAt: string | null;
   operator: string | null;
+}
+
+interface ProjectInfo {
+  name: string;
+  type: ProjectType;
+  hasStorage: boolean;
+  hasPv: boolean;
+  hasLoad: boolean;
 }
 
 const STATUS_BADGE: Record<CurveStatus, { label: string; className: string }> = {
@@ -30,7 +39,6 @@ const STATUS_BADGE: Record<CurveStatus, { label: string; className: string }> = 
   failed: { label: '失败', className: 'bg-destructive text-destructive-foreground' },
 };
 
-// All projects have storage; B/C have PV; C has load
 const MOCK_RECORDS: CurveRecord[] = [
   { id: '1', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-10', storageStatus: 'pending', pvStatus: null, loadStatus: null, lastSentAt: null, operator: null },
   { id: '2', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-09', storageStatus: 'sent', pvStatus: null, loadStatus: null, lastSentAt: '2026-03-08 08:00:00', operator: '王工' },
@@ -45,10 +53,10 @@ const MOCK_RECORDS: CurveRecord[] = [
   { id: '11', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-05', storageStatus: 'sent', pvStatus: 'sent', loadStatus: 'sent', lastSentAt: '2026-03-04 08:00:00', operator: '系统' },
 ];
 
-const ALL_PROJECTS = [
-  { name: '纯储能测试站', type: 'A' as ProjectType },
-  { name: '示范储能电站一期', type: 'B' as ProjectType },
-  { name: '朝6-605站', type: 'C' as ProjectType },
+const ALL_PROJECTS: ProjectInfo[] = [
+  { name: '纯储能测试站', type: 'A', hasStorage: true, hasPv: false, hasLoad: false },
+  { name: '示范储能电站一期', type: 'B', hasStorage: true, hasPv: true, hasLoad: false },
+  { name: '朝6-605站', type: 'C', hasStorage: true, hasPv: true, hasLoad: true },
 ];
 
 function StatusCell({ status }: { status: CurveStatus | null }) {
@@ -57,12 +65,45 @@ function StatusCell({ status }: { status: CurveStatus | null }) {
   return <Badge className={cfg.className}>{cfg.label}</Badge>;
 }
 
+const CURVE_TYPE_LABELS: Record<string, string> = {
+  storage: '储能计划',
+  pv: '光伏预测',
+  load: '负荷计划',
+};
+
+function CurveTypeTags({ project }: { project: ProjectInfo }) {
+  const types: string[] = [];
+  if (project.hasStorage) types.push('storage');
+  if (project.hasPv) types.push('pv');
+  if (project.hasLoad) types.push('load');
+  return (
+    <div className="flex flex-wrap gap-1">
+      {types.map(t => (
+        <Badge key={t} variant="secondary" className="text-xs font-normal">
+          {CURVE_TYPE_LABELS[t]}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
+interface ProjectRow {
+  project: ProjectInfo;
+  latestRecord: CurveRecord | null;
+  autoDispatch: boolean;
+}
+
 const Index = () => {
   const navigate = useNavigate();
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [activeStrategyType, setActiveStrategyType] = useState<CurveTypeKey | null>(null);
   const [newCurveProject, setNewCurveProject] = useState('');
   const [projectFilterOpen, setProjectFilterOpen] = useState(false);
+  const [autoDispatchMap, setAutoDispatchMap] = useState<Record<string, boolean>>(() => {
+    const map: Record<string, boolean> = {};
+    ALL_PROJECTS.forEach(p => { map[p.name] = false; });
+    return map;
+  });
 
   const toggleProject = useCallback((name: string) => {
     setSelectedProjects(prev =>
@@ -74,11 +115,15 @@ const Index = () => {
     setActiveStrategyType(prev => prev === type ? null : type);
   }, []);
 
+  const toggleAutoDispatch = useCallback((projectName: string) => {
+    setAutoDispatchMap(prev => ({ ...prev, [projectName]: !prev[projectName] }));
+  }, []);
+
   // Compute strategy stats
   const strategyStats = useMemo((): StrategyStats[] => {
-    const projectsWithStorage = ALL_PROJECTS.length; // all have storage
-    const projectsWithPv = ALL_PROJECTS.filter(p => p.type === 'B' || p.type === 'C').length;
-    const projectsWithLoad = ALL_PROJECTS.filter(p => p.type === 'C').length;
+    const projectsWithStorage = ALL_PROJECTS.filter(p => p.hasStorage).length;
+    const projectsWithPv = ALL_PROJECTS.filter(p => p.hasPv).length;
+    const projectsWithLoad = ALL_PROJECTS.filter(p => p.hasLoad).length;
 
     const count = (field: 'storageStatus' | 'pvStatus' | 'loadStatus', status: CurveStatus) =>
       MOCK_RECORDS.filter(r => r[field] === status).length;
@@ -90,20 +135,29 @@ const Index = () => {
     ];
   }, []);
 
-  // Filtered records
-  const filtered = useMemo(() => {
-    return MOCK_RECORDS
-      .filter(r => selectedProjects.length === 0 || selectedProjects.includes(r.projectName))
-      .filter(r => {
+  // Build per-project rows with latest curve
+  const projectRows = useMemo((): ProjectRow[] => {
+    return ALL_PROJECTS
+      .filter(p => selectedProjects.length === 0 || selectedProjects.includes(p.name))
+      .filter(p => {
         if (!activeStrategyType) return true;
-        // Only show records that have this curve type
-        if (activeStrategyType === 'storage') return r.storageStatus !== null;
-        if (activeStrategyType === 'pv') return r.pvStatus !== null;
-        if (activeStrategyType === 'load') return r.loadStatus !== null;
+        if (activeStrategyType === 'storage') return p.hasStorage;
+        if (activeStrategyType === 'pv') return p.hasPv;
+        if (activeStrategyType === 'load') return p.hasLoad;
         return true;
       })
-      .sort((a, b) => b.curveDate.localeCompare(a.curveDate));
-  }, [selectedProjects, activeStrategyType]);
+      .map(project => {
+        const records = MOCK_RECORDS
+          .filter(r => r.projectName === project.name)
+          .sort((a, b) => b.curveDate.localeCompare(a.curveDate));
+        return {
+          project,
+          latestRecord: records[0] ?? null,
+          autoDispatch: autoDispatchMap[project.name] ?? false,
+        };
+      })
+      .sort((a, b) => a.project.name.localeCompare(b.project.name));
+  }, [selectedProjects, activeStrategyType, autoDispatchMap]);
 
   const handleNewCurve = () => {
     if (!newCurveProject) return;
@@ -219,42 +273,56 @@ const Index = () => {
           </Dialog>
         </div>
 
-        {/* Area 2: Project Detail Table */}
+        {/* Area 2: Per-project table */}
         <div className="rounded-md border border-panel-border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[160px]">项目名称</TableHead>
-                <TableHead className="w-[120px]">曲线日期</TableHead>
-                <TableHead className="w-[100px]">储能计划</TableHead>
-                <TableHead className="w-[100px]">光伏预测</TableHead>
-                <TableHead className="w-[100px]">负荷计划</TableHead>
-                <TableHead className="w-[180px]">最近下发时间</TableHead>
-                <TableHead className="w-[100px]">操作人</TableHead>
+                <TableHead className="w-[140px]">项目名称</TableHead>
+                <TableHead className="w-[180px]">曲线类型</TableHead>
+                <TableHead className="w-[120px]">最近曲线日期</TableHead>
+                <TableHead className="w-[90px]">储能计划</TableHead>
+                <TableHead className="w-[90px]">光伏预测</TableHead>
+                <TableHead className="w-[90px]">负荷计划</TableHead>
+                <TableHead className="w-[160px]">最近下发时间</TableHead>
+                <TableHead className="w-[80px]">操作人</TableHead>
+                <TableHead className="w-[90px]">自动下发</TableHead>
                 <TableHead className="w-[80px]">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {projectRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                     暂无数据
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map(r => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.projectName}</TableCell>
-                    <TableCell>{r.curveDate}</TableCell>
-                    <TableCell><StatusCell status={r.storageStatus} /></TableCell>
-                    <TableCell><StatusCell status={r.pvStatus} /></TableCell>
-                    <TableCell><StatusCell status={r.loadStatus} /></TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{r.lastSentAt ?? '—'}</TableCell>
-                    <TableCell>{r.operator ?? '—'}</TableCell>
+                projectRows.map(({ project, latestRecord, autoDispatch }) => (
+                  <TableRow key={project.name}>
+                    <TableCell className="font-medium">{project.name}</TableCell>
+                    <TableCell><CurveTypeTags project={project} /></TableCell>
+                    <TableCell>{latestRecord?.curveDate ?? '—'}</TableCell>
+                    <TableCell><StatusCell status={latestRecord?.storageStatus ?? null} /></TableCell>
+                    <TableCell><StatusCell status={latestRecord?.pvStatus ?? null} /></TableCell>
+                    <TableCell><StatusCell status={latestRecord?.loadStatus ?? null} /></TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{latestRecord?.lastSentAt ?? '—'}</TableCell>
+                    <TableCell>{latestRecord?.operator ?? '—'}</TableCell>
                     <TableCell>
-                      <Link to={`/curve-detail?id=${r.id}`}>
-                        <Button variant="link" size="sm" className="h-auto p-0">查看详情</Button>
-                      </Link>
+                      <Switch
+                        checked={autoDispatch}
+                        onCheckedChange={() => toggleAutoDispatch(project.name)}
+                        disabled={!latestRecord}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {latestRecord ? (
+                        <Link to={`/curve-detail?id=${latestRecord.id}`}>
+                          <Button variant="link" size="sm" className="h-auto p-0">查看详情</Button>
+                        </Link>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">—</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
