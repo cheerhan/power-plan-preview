@@ -157,12 +157,15 @@ const CurveDetail = () => {
 
           {/* Storage period config */}
           <PeriodConfigPanel periods={activePeriods} onChange={setPeriods} disabled={!editing} />
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            展示储能系统每天各时段的充电、放电或禁止动作计划（由运营人员配置），下发到现场控制器后即作为次日实际运行的依据。
+          </p>
 
           {data.hasPv && (
             <div className="space-y-2 rounded-md border border-panel-border bg-panel-bg p-3">
               <h3 className="text-sm font-semibold text-foreground">光伏预测功率曲线</h3>
-              <p className="text-xs text-muted-foreground">
-                已配置光伏预测算法，预测数据由系统自动生成。
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                系统根据气象和历史发电数据，自动预测本站点次日的光伏发电功率（每 15 分钟一个点），用于协调储能充放电和负荷的调度安排。
               </p>
               {editing && (
                 <p className="text-xs text-primary">
@@ -174,25 +177,12 @@ const CurveDetail = () => {
 
           {data.hasLoad && (
             <div className="space-y-2 rounded-md border border-panel-border bg-panel-bg p-3">
-              <h3 className="text-sm font-semibold text-foreground">负荷信息</h3>
-              <p className="text-xs text-muted-foreground">
-                本项目已配置负荷控制能力。当前版本仅展示负荷实际功率曲线。
+              <h3 className="text-sm font-semibold text-foreground">负荷计划曲线</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                展示本站点可调负荷的功率曲线，调度计划基于可调负荷制定，与储能、光伏协调配合实现源网荷储整体优化。
               </p>
             </div>
           )}
-
-          <div className="rounded-md border border-panel-border bg-panel-bg p-3 space-y-1">
-            <h4 className="text-xs font-semibold text-muted-foreground">当前场景</h4>
-            <p className="text-xs text-muted-foreground">
-              项目类型：{data.projectType === 'A' ? '纯储能' : data.projectType === 'B' ? '光储' : '光储荷'}
-              {' · '}
-              曲线日期：{data.curveDate}
-              {' · '}
-              {historical ? '历史曲线（只读）' : editing ? '编辑态' : '只读态'}
-              {!editing && executed && ' · 已执行（计划+实际）'}
-              {!editing && !executed && !historical && ' · 未执行（仅计划）'}
-            </p>
-          </div>
         </div>
 
         {/* Right chart/table area */}
