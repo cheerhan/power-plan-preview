@@ -5,9 +5,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Download, Plus } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Download, Plus, CalendarIcon, Filter } from 'lucide-react';
+import { useState, useMemo, useCallback } from 'react';
 import { CurveStatus, ProjectType } from '@/types/curve';
+import { format } from 'date-fns';
 
 interface CurveRecord {
   id: string;
@@ -33,16 +37,13 @@ const STATUS_CONFIG: Record<CurveStatus, { label: string; variant: 'default' | '
 };
 
 const MOCK_RECORDS: CurveRecord[] = [
-  // Project A: 纯储能
   { id: '1', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-10', curveTypes: ['storage'], status: 'pending', lastSentAt: null, operator: null },
   { id: '2', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-09', curveTypes: ['storage'], status: 'sent', lastSentAt: '2026-03-08 08:00:00', operator: '王工' },
   { id: '3', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-07', curveTypes: ['storage'], status: 'sent', lastSentAt: '2026-03-06 08:00:00', operator: '系统' },
-  // Project B: 光储
   { id: '4', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-10', curveTypes: ['storage', 'pv'], status: 'pending', lastSentAt: null, operator: null },
   { id: '5', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-09', curveTypes: ['storage', 'pv'], status: 'sent', lastSentAt: '2026-03-08 08:30:00', operator: '张工' },
   { id: '6', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-08', curveTypes: ['storage', 'pv'], status: 'sent', lastSentAt: '2026-03-07 08:00:00', operator: '系统' },
   { id: '7', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-06', curveTypes: ['storage', 'pv'], status: 'failed', lastSentAt: '2026-03-05 08:00:00', operator: '系统' },
-  // Project C: 光储荷
   { id: '8', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-10', curveTypes: ['storage', 'pv', 'load'], status: 'pending', lastSentAt: null, operator: null },
   { id: '9', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-09', curveTypes: ['storage', 'pv', 'load'], status: 'sent', lastSentAt: '2026-03-08 09:15:00', operator: '李工' },
   { id: '10', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-07', curveTypes: ['storage', 'pv', 'load'], status: 'failed', lastSentAt: '2026-03-06 09:15:00', operator: '李工' },
@@ -57,22 +58,37 @@ const ALL_PROJECTS = [
 
 const Index = () => {
   const navigate = useNavigate();
-  const [searchProject, setSearchProject] = useState('');
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
   const [newCurveProject, setNewCurveProject] = useState('');
+  const [projectFilterOpen, setProjectFilterOpen] = useState(false);
+  const [dateFromOpen, setDateFromOpen] = useState(false);
+  const [dateToOpen, setDateToOpen] = useState(false);
+
+  const toggleProject = useCallback((name: string) => {
+    setSelectedProjects(prev =>
+      prev.includes(name) ? prev.filter(p => p !== name) : [...prev, name]
+    );
+  }, []);
 
   const filtered = useMemo(() => {
     return MOCK_RECORDS
-      .filter(r => !searchProject || r.projectName.includes(searchProject))
+      .filter(r => selectedProjects.length === 0 || selectedProjects.includes(r.projectName))
       .filter(r => statusFilter === 'all' || r.status === statusFilter)
+      .filter(r => {
+        if (dateFrom && r.curveDate < format(dateFrom, 'yyyy-MM-dd')) return false;
+        if (dateTo && r.curveDate > format(dateTo, 'yyyy-MM-dd')) return false;
+        return true;
+      })
       .sort((a, b) => b.curveDate.localeCompare(a.curveDate));
-  }, [searchProject, statusFilter]);
+  }, [selectedProjects, statusFilter, dateFrom, dateTo]);
 
   const handleNewCurve = () => {
     if (!newCurveProject) return;
     const proj = ALL_PROJECTS.find(p => p.name === newCurveProject);
     if (!proj) return;
-    // Check if tomorrow's curve already exists
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().slice(0, 10);
@@ -84,6 +100,12 @@ const Index = () => {
     }
   };
 
+  const handleExport = () => {
+    const ts = format(new Date(), 'yyyyMMddHHmmss');
+    // Demo: just show filename
+    alert(`导出文件：调度曲线列表_${ts}.xlsx（演示）`);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b border-panel-border px-6 py-4">
@@ -92,13 +114,68 @@ const Index = () => {
 
       <div className="p-6 space-y-4">
         {/* Filters */}
-        <div className="flex items-center gap-3">
-          <Input
-            placeholder="搜索项目名称"
-            value={searchProject}
-            onChange={e => setSearchProject(e.target.value)}
-            className="w-[200px] h-9 text-sm"
-          />
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Project multi-select dropdown */}
+          <Popover open={projectFilterOpen} onOpenChange={setProjectFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 text-sm min-w-[160px] justify-start">
+                <Filter className="mr-1.5 h-3.5 w-3.5" />
+                {selectedProjects.length === 0
+                  ? '全部项目'
+                  : `已选 ${selectedProjects.length} 个项目`}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[220px] p-2" align="start">
+              <div className="space-y-1">
+                {ALL_PROJECTS.map(p => (
+                  <label key={p.name} className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent cursor-pointer text-sm">
+                    <Checkbox
+                      checked={selectedProjects.includes(p.name)}
+                      onCheckedChange={() => toggleProject(p.name)}
+                    />
+                    <span>{p.name}</span>
+                  </label>
+                ))}
+              </div>
+              {selectedProjects.length > 0 && (
+                <Button variant="ghost" size="sm" className="w-full mt-1 text-xs" onClick={() => setSelectedProjects([])}>
+                  清除筛选
+                </Button>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          {/* Date range: from */}
+          <Popover open={dateFromOpen} onOpenChange={setDateFromOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 text-sm min-w-[130px] justify-start">
+                <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                {dateFrom ? format(dateFrom, 'yyyy-MM-dd') : '开始日期'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={dateFrom} onSelect={(d) => { setDateFrom(d); setDateFromOpen(false); }} />
+            </PopoverContent>
+          </Popover>
+          <span className="text-xs text-muted-foreground">至</span>
+          <Popover open={dateToOpen} onOpenChange={setDateToOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 text-sm min-w-[130px] justify-start">
+                <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                {dateTo ? format(dateTo, 'yyyy-MM-dd') : '结束日期'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={dateTo} onSelect={(d) => { setDateTo(d); setDateToOpen(false); }} />
+            </PopoverContent>
+          </Popover>
+          {(dateFrom || dateTo) && (
+            <Button variant="ghost" size="sm" className="h-9 text-xs" onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}>
+              清除日期
+            </Button>
+          )}
+
+          {/* Status filter */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[120px] h-9 text-sm">
               <SelectValue placeholder="下发状态" />
@@ -110,8 +187,9 @@ const Index = () => {
               <SelectItem value="failed">失败</SelectItem>
             </SelectContent>
           </Select>
+
           <div className="flex-1" />
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="mr-1 h-3.5 w-3.5" />
             导出
           </Button>
@@ -168,36 +246,44 @@ const Index = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map(r => {
-                const sc = STATUS_CONFIG[r.status];
-                return (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.projectName}</TableCell>
-                    <TableCell>{r.curveDate}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {r.curveTypes.map(t => (
-                          <Badge key={t} variant="secondary" className={`text-xs ${CURVE_TYPE_LABELS[t].className}`}>
-                            {CURVE_TYPE_LABELS[t].label}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={sc.variant} className={sc.className}>
-                        {sc.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{r.lastSentAt ?? '—'}</TableCell>
-                    <TableCell>{r.operator ?? '—'}</TableCell>
-                    <TableCell>
-                      <Link to={`/curve-detail?id=${r.id}`}>
-                        <Button variant="link" size="sm" className="h-auto p-0">查看详情</Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    暂无数据
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filtered.map(r => {
+                  const sc = STATUS_CONFIG[r.status];
+                  return (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-medium">{r.projectName}</TableCell>
+                      <TableCell>{r.curveDate}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {r.curveTypes.map(t => (
+                            <Badge key={t} variant="secondary" className={`text-xs ${CURVE_TYPE_LABELS[t].className}`}>
+                              {CURVE_TYPE_LABELS[t].label}
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={sc.variant} className={sc.className}>
+                          {sc.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{r.lastSentAt ?? '—'}</TableCell>
+                      <TableCell>{r.operator ?? '—'}</TableCell>
+                      <TableCell>
+                        <Link to={`/curve-detail?id=${r.id}`}>
+                          <Button variant="link" size="sm" className="h-auto p-0">查看详情</Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </div>

@@ -9,137 +9,9 @@ import PvChart from '@/components/curve/PvChart';
 import LoadChart from '@/components/curve/LoadChart';
 import ActionBar from '@/components/curve/ActionBar';
 import DispatchHistory from '@/components/curve/DispatchHistory';
-import { TimePeriod, CurveDetail as CurveDetailType, ProjectType, CurveStatus } from '@/types/curve';
+import { TimePeriod, CurveDetail as CurveDetailType, ProjectType } from '@/types/curve';
 import { validatePeriods, isCurveEditable, isCurveExecuted, getTomorrowDate } from '@/lib/curve-utils';
-
-// Mock data covering all 3 project types + historical/current/future dates
-const MOCK_DB: Record<string, CurveDetailType> = {
-  // A: 纯储能 - tomorrow (pending)
-  '1': {
-    id: '1', projectName: '纯储能测试站', projectType: 'A',
-    curveDate: '2026-03-10', status: 'pending', lastSentAt: null, operator: null,
-    hasPv: false, hasLoad: false,
-    periods: [{ id: '1', startTime: '00:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 }],
-  },
-  // A: 纯储能 - today (sent)
-  '2': {
-    id: '2', projectName: '纯储能测试站', projectType: 'A',
-    curveDate: '2026-03-09', status: 'sent', lastSentAt: '2026-03-08 08:00:00', operator: '王工',
-    hasPv: false, hasLoad: false,
-    periods: [
-      { id: '1', startTime: '00:00', endTime: '07:00', actionType: 'charge', powerLimit: 100 },
-      { id: '2', startTime: '07:00', endTime: '10:00', actionType: 'idle', powerLimit: 0 },
-      { id: '3', startTime: '10:00', endTime: '12:00', actionType: 'discharge', powerLimit: 80 },
-      { id: '4', startTime: '12:00', endTime: '14:00', actionType: 'idle', powerLimit: 0 },
-      { id: '5', startTime: '14:00', endTime: '17:00', actionType: 'discharge', powerLimit: 80 },
-      { id: '6', startTime: '17:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 },
-    ],
-  },
-  // A: 纯储能 - historical
-  '3': {
-    id: '3', projectName: '纯储能测试站', projectType: 'A',
-    curveDate: '2026-03-07', status: 'sent', lastSentAt: '2026-03-06 08:00:00', operator: '系统',
-    hasPv: false, hasLoad: false,
-    periods: [
-      { id: '1', startTime: '00:00', endTime: '07:00', actionType: 'charge', powerLimit: 100 },
-      { id: '2', startTime: '07:00', endTime: '14:00', actionType: 'idle', powerLimit: 0 },
-      { id: '3', startTime: '14:00', endTime: '18:00', actionType: 'discharge', powerLimit: 60 },
-      { id: '4', startTime: '18:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 },
-    ],
-  },
-  // B: 光储 - tomorrow
-  '4': {
-    id: '4', projectName: '示范储能电站一期', projectType: 'B',
-    curveDate: '2026-03-10', status: 'pending', lastSentAt: null, operator: null,
-    hasPv: true, hasLoad: false,
-    periods: [{ id: '1', startTime: '00:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 }],
-  },
-  // B: 光储 - today (sent)
-  '5': {
-    id: '5', projectName: '示范储能电站一期', projectType: 'B',
-    curveDate: '2026-03-09', status: 'sent', lastSentAt: '2026-03-08 08:30:00', operator: '张工',
-    hasPv: true, hasLoad: false,
-    periods: [
-      { id: '1', startTime: '00:00', endTime: '07:00', actionType: 'idle', powerLimit: 0 },
-      { id: '2', startTime: '07:00', endTime: '11:00', actionType: 'charge', powerLimit: 80 },
-      { id: '3', startTime: '11:00', endTime: '14:00', actionType: 'idle', powerLimit: 0 },
-      { id: '4', startTime: '14:00', endTime: '18:00', actionType: 'discharge', powerLimit: 60 },
-      { id: '5', startTime: '18:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 },
-    ],
-  },
-  // B: 光储 - historical
-  '6': {
-    id: '6', projectName: '示范储能电站一期', projectType: 'B',
-    curveDate: '2026-03-08', status: 'sent', lastSentAt: '2026-03-07 08:00:00', operator: '系统',
-    hasPv: true, hasLoad: false,
-    periods: [
-      { id: '1', startTime: '00:00', endTime: '06:00', actionType: 'charge', powerLimit: 90 },
-      { id: '2', startTime: '06:00', endTime: '10:00', actionType: 'idle', powerLimit: 0 },
-      { id: '3', startTime: '10:00', endTime: '12:00', actionType: 'charge', powerLimit: 60 },
-      { id: '4', startTime: '12:00', endTime: '14:00', actionType: 'idle', powerLimit: 0 },
-      { id: '5', startTime: '14:00', endTime: '17:00', actionType: 'discharge', powerLimit: 80 },
-      { id: '6', startTime: '17:00', endTime: '21:00', actionType: 'discharge', powerLimit: 50 },
-      { id: '7', startTime: '21:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 },
-    ],
-  },
-  // B: 光储 - historical failed
-  '7': {
-    id: '7', projectName: '示范储能电站一期', projectType: 'B',
-    curveDate: '2026-03-06', status: 'failed', lastSentAt: '2026-03-05 08:00:00', operator: '系统',
-    hasPv: true, hasLoad: false,
-    periods: [
-      { id: '1', startTime: '00:00', endTime: '07:00', actionType: 'charge', powerLimit: 100 },
-      { id: '2', startTime: '07:00', endTime: '17:00', actionType: 'idle', powerLimit: 0 },
-      { id: '3', startTime: '17:00', endTime: '24:00', actionType: 'discharge', powerLimit: 70 },
-    ],
-  },
-  // C: 光储荷 - tomorrow
-  '8': {
-    id: '8', projectName: '朝6-605站', projectType: 'C',
-    curveDate: '2026-03-10', status: 'pending', lastSentAt: null, operator: null,
-    hasPv: true, hasLoad: true,
-    periods: [{ id: '1', startTime: '00:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 }],
-  },
-  // C: 光储荷 - today (sent)
-  '9': {
-    id: '9', projectName: '朝6-605站', projectType: 'C',
-    curveDate: '2026-03-09', status: 'sent', lastSentAt: '2026-03-08 09:15:00', operator: '李工',
-    hasPv: true, hasLoad: true,
-    periods: [
-      { id: '1', startTime: '00:00', endTime: '07:00', actionType: 'charge', powerLimit: 100 },
-      { id: '2', startTime: '07:00', endTime: '10:00', actionType: 'idle', powerLimit: 0 },
-      { id: '3', startTime: '10:00', endTime: '12:00', actionType: 'charge', powerLimit: 60 },
-      { id: '4', startTime: '12:00', endTime: '14:00', actionType: 'idle', powerLimit: 0 },
-      { id: '5', startTime: '14:00', endTime: '17:00', actionType: 'discharge', powerLimit: 80 },
-      { id: '6', startTime: '17:00', endTime: '21:00', actionType: 'discharge', powerLimit: 50 },
-      { id: '7', startTime: '21:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 },
-    ],
-  },
-  // C: 光储荷 - historical failed
-  '10': {
-    id: '10', projectName: '朝6-605站', projectType: 'C',
-    curveDate: '2026-03-07', status: 'failed', lastSentAt: '2026-03-06 09:15:00', operator: '李工',
-    hasPv: true, hasLoad: true,
-    periods: [
-      { id: '1', startTime: '00:00', endTime: '07:00', actionType: 'charge', powerLimit: 100 },
-      { id: '2', startTime: '07:00', endTime: '14:00', actionType: 'idle', powerLimit: 0 },
-      { id: '3', startTime: '14:00', endTime: '18:00', actionType: 'discharge', powerLimit: 60 },
-      { id: '4', startTime: '18:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 },
-    ],
-  },
-  // C: 光储荷 - historical
-  '11': {
-    id: '11', projectName: '朝6-605站', projectType: 'C',
-    curveDate: '2026-03-05', status: 'sent', lastSentAt: '2026-03-04 08:00:00', operator: '系统',
-    hasPv: true, hasLoad: true,
-    periods: [
-      { id: '1', startTime: '00:00', endTime: '07:00', actionType: 'charge', powerLimit: 100 },
-      { id: '2', startTime: '07:00', endTime: '14:00', actionType: 'idle', powerLimit: 0 },
-      { id: '3', startTime: '14:00', endTime: '18:00', actionType: 'discharge', powerLimit: 60 },
-      { id: '4', startTime: '18:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 },
-    ],
-  },
-};
+import { MOCK_CURVE_DB } from '@/data/mock-curves';
 
 function buildNewCurve(projectName: string, projectType: ProjectType): CurveDetailType {
   return {
@@ -168,7 +40,7 @@ const CurveDetail = () => {
       const projectType = (searchParams.get('type') || 'A') as ProjectType;
       return buildNewCurve(projectName, projectType);
     }
-    return id ? MOCK_DB[id] : Object.values(MOCK_DB)[0];
+    return id ? MOCK_CURVE_DB[id] : Object.values(MOCK_CURVE_DB)[0];
   }, [id, isNew, searchParams]);
 
   const [data] = useState(initialData!);
@@ -182,7 +54,6 @@ const CurveDetail = () => {
   const historical = useMemo(() => !isCurveEditable(data.curveDate), [data.curveDate]);
   const executed = useMemo(() => isCurveExecuted(data.curveDate), [data.curveDate]);
 
-  // Determine whether to show actual lines in charts
   // Edit mode: only plan line; Readonly + executed: plan + actual
   const showActual = !editing && executed;
 
