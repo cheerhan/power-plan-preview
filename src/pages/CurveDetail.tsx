@@ -1,5 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { BarChart3, TableIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 import { toast } from '@/hooks/use-toast';
 import DetailHeader from '@/components/curve/DetailHeader';
@@ -7,12 +9,14 @@ import PeriodConfigPanel from '@/components/curve/PeriodConfigPanel';
 import EnergyStorageChart from '@/components/curve/EnergyStorageChart';
 import PvChart from '@/components/curve/PvChart';
 import LoadChart from '@/components/curve/LoadChart';
+import CurveDataTable from '@/components/curve/CurveDataTable';
 import ActionBar from '@/components/curve/ActionBar';
 import DispatchHistory from '@/components/curve/DispatchHistory';
 import DateSidebar from '@/components/curve/DateSidebar';
 import { TimePeriod, CurveDetail as CurveDetailType, ProjectType, CurveStatus } from '@/types/curve';
 import { validatePeriods, isCurveEditable, isCurveExecuted, getTomorrowDate } from '@/lib/curve-utils';
 import { MOCK_CURVE_DB } from '@/data/mock-curves';
+import { cn } from '@/lib/utils';
 
 function buildNewCurve(projectName: string, projectType: ProjectType): CurveDetailType {
   return {
@@ -50,7 +54,7 @@ const CurveDetail = () => {
   const [savedPeriods, setSavedPeriods] = useState<TimePeriod[]>(data.periods);
   const [editing, setEditing] = useState(isNew || shouldEdit);
   const [autoDispatch, setAutoDispatch] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
 
   const editable = useMemo(() => isCurveEditable(data.curveDate), [data.curveDate]);
   const historical = useMemo(() => !isCurveEditable(data.curveDate), [data.curveDate]);
@@ -181,32 +185,66 @@ const CurveDetail = () => {
           </div>
         </div>
 
-        {/* Right chart area */}
+        {/* Right chart/table area */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-2">储能计划限值</h3>
-            <EnergyStorageChart periods={activePeriods} showActual={showActual} chartHeight={chartHeight} />
+          {/* View mode toggle */}
+          <div className="flex items-center justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn("h-8 gap-1.5 text-xs", viewMode === 'chart' && "bg-accent text-accent-foreground")}
+              onClick={() => setViewMode('chart')}
+            >
+              <BarChart3 className="h-3.5 w-3.5" />
+              图表
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn("h-8 gap-1.5 text-xs", viewMode === 'table' && "bg-accent text-accent-foreground")}
+              onClick={() => setViewMode('table')}
+            >
+              <TableIcon className="h-3.5 w-3.5" />
+              数据表
+            </Button>
           </div>
 
+          {/* Storage */}
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-2">储能计划限值</h3>
+            {viewMode === 'chart' ? (
+              <EnergyStorageChart periods={activePeriods} showActual={showActual} chartHeight={chartHeight} />
+            ) : (
+              <CurveDataTable type="storage" periods={activePeriods} showActual={showActual} />
+            )}
+          </div>
+
+          {/* PV */}
           {data.hasPv && (
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-2">光伏预测功率</h3>
-              <PvChart showActual={showActual} chartHeight={chartHeight} />
+              {viewMode === 'chart' ? (
+                <PvChart showActual={showActual} chartHeight={chartHeight} />
+              ) : (
+                <CurveDataTable type="pv" showActual={showActual} />
+              )}
             </div>
           )}
 
+          {/* Load */}
           {data.hasLoad && (
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-2">负荷曲线</h3>
-              <LoadChart chartHeight={chartHeight} />
+              {viewMode === 'chart' ? (
+                <LoadChart chartHeight={chartHeight} />
+              ) : (
+                <CurveDataTable type="load" />
+              )}
             </div>
           )}
 
-          {showHistory && (
-            <div className="mt-4">
-              <DispatchHistory />
-            </div>
-          )}
+          {/* Dispatch history */}
+          <DispatchHistory />
         </div>
       </div>
 
@@ -216,8 +254,6 @@ const CurveDetail = () => {
         isHistorical={historical}
         autoDispatch={autoDispatch}
         onAutoDispatchChange={setAutoDispatch}
-        showHistory={showHistory}
-        onToggleHistory={() => setShowHistory(!showHistory)}
         onEdit={() => setEditing(true)}
         onSave={handleSave}
         onCancel={handleCancel}
