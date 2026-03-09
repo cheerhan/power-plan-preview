@@ -1,5 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { BarChart3, TableIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 import { toast } from '@/hooks/use-toast';
 import DetailHeader from '@/components/curve/DetailHeader';
@@ -7,12 +9,14 @@ import PeriodConfigPanel from '@/components/curve/PeriodConfigPanel';
 import EnergyStorageChart from '@/components/curve/EnergyStorageChart';
 import PvChart from '@/components/curve/PvChart';
 import LoadChart from '@/components/curve/LoadChart';
+import CurveDataTable from '@/components/curve/CurveDataTable';
 import ActionBar from '@/components/curve/ActionBar';
 import DispatchHistory from '@/components/curve/DispatchHistory';
 import DateSidebar from '@/components/curve/DateSidebar';
 import { TimePeriod, CurveDetail as CurveDetailType, ProjectType, CurveStatus } from '@/types/curve';
 import { validatePeriods, isCurveEditable, isCurveExecuted, getTomorrowDate } from '@/lib/curve-utils';
 import { MOCK_CURVE_DB } from '@/data/mock-curves';
+import { cn } from '@/lib/utils';
 
 function buildNewCurve(projectName: string, projectType: ProjectType): CurveDetailType {
   return {
