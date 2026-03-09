@@ -157,9 +157,11 @@ const CurveDetail = () => {
 
           {/* Storage period config */}
           <PeriodConfigPanel periods={activePeriods} onChange={setPeriods} disabled={!editing} />
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            展示储能系统每天各时段的充电、放电或禁止动作计划（由运营人员配置），下发到现场控制器后即作为次日实际运行的依据。
-          </p>
+          <div className="rounded-md border border-panel-border bg-panel-bg p-3">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              展示储能系统每天各时段的充电、放电或禁止动作计划（由运营人员配置），下发到现场控制器后即作为次日实际运行的依据。
+            </p>
+          </div>
 
           {data.hasPv && (
             <div className="space-y-2 rounded-md border border-panel-border bg-panel-bg p-3">
