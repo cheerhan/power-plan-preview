@@ -255,8 +255,6 @@ const CurveDetail = () => {
         isHistorical={historical}
         autoDispatch={autoDispatch}
         onAutoDispatchChange={setAutoDispatch}
-        showHistory={showHistory}
-        onToggleHistory={() => setShowHistory(!showHistory)}
         onEdit={() => setEditing(true)}
         onSave={handleSave}
         onCancel={handleCancel}
