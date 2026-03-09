@@ -1,4 +1,4 @@
-import { Pencil, Send, Trash2, Download } from 'lucide-react';
+import { ArrowLeft, Pencil, Send, Trash2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -27,9 +27,9 @@ const ActionBar = ({
   onEdit, onSave, onCancel, onSend, onDelete, onExport,
 }: Props) => (
   <div className="flex items-center justify-between border-t border-panel-border px-6 py-3">
-    {/* Left: auto dispatch + history */}
+    {/* Left: auto dispatch + history — always visible except editing */}
     <div className="flex items-center gap-4">
-      {!isHistorical && !editing && (
+      {!editing && (
         <>
           <div className="flex items-center gap-2">
             <Switch checked={autoDispatch} onCheckedChange={onAutoDispatchChange} id="auto-dispatch" />
@@ -92,7 +92,7 @@ const ActionBar = ({
           ) : null}
 
           {/* Delete button - only for today/tomorrow, hidden for historical */}
-          {!isHistorical && editable && (
+          {!isHistorical && editable ? (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
@@ -111,7 +111,19 @@ const ActionBar = ({
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          )}
+          ) : isHistorical ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button variant="outline" size="sm" disabled className="text-muted-foreground">
+                    <Trash2 className="mr-1 h-3.5 w-3.5" />
+                    删除
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>历史曲线不可删除</TooltipContent>
+            </Tooltip>
+          ) : null}
 
           {/* Export always available */}
           <Button variant="outline" size="sm" onClick={onExport}>
