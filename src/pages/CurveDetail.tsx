@@ -155,30 +155,25 @@ const CurveDetail = () => {
         </div>
 
         {/* Right chart area */}
-        <div className="flex-1 overflow-y-auto p-5">
-          <Tabs defaultValue="storage">
-            <TabsList>
-              {tabs.map(t => (
-                <TabsTrigger key={t.key} value={t.key}>{t.label}</TabsTrigger>
-              ))}
-            </TabsList>
+        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-2">储能计划限值</h3>
+            <EnergyStorageChart periods={activePeriods} showActual={showActual} />
+          </div>
 
-            <TabsContent value="storage">
-              <EnergyStorageChart periods={activePeriods} showActual={showActual} />
-            </TabsContent>
+          {data.hasPv && (
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-2">光伏预测功率</h3>
+              <PvChart showActual={showActual} />
+            </div>
+          )}
 
-            {data.hasPv && (
-              <TabsContent value="pv">
-                <PvChart showActual={showActual} />
-              </TabsContent>
-            )}
-
-            {data.hasLoad && (
-              <TabsContent value="load">
-                <LoadChart />
-              </TabsContent>
-            )}
-          </Tabs>
+          {data.hasLoad && (
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-2">负荷曲线</h3>
+              <LoadChart />
+            </div>
+          )}
 
           {/* Dispatch history shown below charts when toggled */}
           {showHistory && (
