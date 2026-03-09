@@ -55,6 +55,7 @@ const DispatchHistory = () => {
       ))}
     </div>
   </div>
-);
+  );
+};
 
 export default DispatchHistory;
