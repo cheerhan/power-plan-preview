@@ -2,52 +2,47 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar } from '@/components/ui/calendar';
-import { Download, Plus, CalendarIcon, Filter } from 'lucide-react';
+import { Download, Plus, Filter } from 'lucide-react';
 import { useState, useMemo, useCallback } from 'react';
 import { CurveStatus, ProjectType } from '@/types/curve';
 import { format } from 'date-fns';
+import { StrategySummaryCards, CurveTypeKey, StrategyStats } from '@/components/list/StrategySummaryCards';
 
 interface CurveRecord {
   id: string;
   projectName: string;
   projectType: ProjectType;
   curveDate: string;
-  curveTypes: ('pv' | 'storage' | 'load')[];
-  status: CurveStatus;
+  storageStatus: CurveStatus | null; // null = project doesn't have this type
+  pvStatus: CurveStatus | null;
+  loadStatus: CurveStatus | null;
   lastSentAt: string | null;
   operator: string | null;
 }
 
-const CURVE_TYPE_LABELS: Record<string, { label: string; className: string }> = {
-  storage: { label: '储能计划', className: 'bg-chart-discharge text-foreground' },
-  pv: { label: '光伏预测', className: 'bg-chart-pv/20 text-foreground' },
-  load: { label: '负荷计划', className: 'bg-muted text-foreground' },
+const STATUS_BADGE: Record<CurveStatus, { label: string; className: string }> = {
+  sent: { label: '成功', className: 'bg-status-success text-primary-foreground' },
+  pending: { label: '待下发', className: 'bg-status-pending text-primary-foreground' },
+  failed: { label: '失败', className: 'bg-destructive text-destructive-foreground' },
 };
 
-const STATUS_CONFIG: Record<CurveStatus, { label: string; variant: 'default' | 'secondary' | 'destructive'; className: string }> = {
-  sent: { label: '成功', variant: 'default', className: 'bg-status-success' },
-  pending: { label: '待下发', variant: 'secondary', className: 'bg-status-pending text-primary-foreground' },
-  failed: { label: '失败', variant: 'destructive', className: '' },
-};
-
+// All projects have storage; B/C have PV; C has load
 const MOCK_RECORDS: CurveRecord[] = [
-  { id: '1', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-10', curveTypes: ['storage'], status: 'pending', lastSentAt: null, operator: null },
-  { id: '2', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-09', curveTypes: ['storage'], status: 'sent', lastSentAt: '2026-03-08 08:00:00', operator: '王工' },
-  { id: '3', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-07', curveTypes: ['storage'], status: 'sent', lastSentAt: '2026-03-06 08:00:00', operator: '系统' },
-  { id: '4', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-10', curveTypes: ['storage', 'pv'], status: 'pending', lastSentAt: null, operator: null },
-  { id: '5', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-09', curveTypes: ['storage', 'pv'], status: 'sent', lastSentAt: '2026-03-08 08:30:00', operator: '张工' },
-  { id: '6', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-08', curveTypes: ['storage', 'pv'], status: 'sent', lastSentAt: '2026-03-07 08:00:00', operator: '系统' },
-  { id: '7', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-06', curveTypes: ['storage', 'pv'], status: 'failed', lastSentAt: '2026-03-05 08:00:00', operator: '系统' },
-  { id: '8', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-10', curveTypes: ['storage', 'pv', 'load'], status: 'pending', lastSentAt: null, operator: null },
-  { id: '9', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-09', curveTypes: ['storage', 'pv', 'load'], status: 'sent', lastSentAt: '2026-03-08 09:15:00', operator: '李工' },
-  { id: '10', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-07', curveTypes: ['storage', 'pv', 'load'], status: 'failed', lastSentAt: '2026-03-06 09:15:00', operator: '李工' },
-  { id: '11', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-05', curveTypes: ['storage', 'pv', 'load'], status: 'sent', lastSentAt: '2026-03-04 08:00:00', operator: '系统' },
+  { id: '1', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-10', storageStatus: 'pending', pvStatus: null, loadStatus: null, lastSentAt: null, operator: null },
+  { id: '2', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-09', storageStatus: 'sent', pvStatus: null, loadStatus: null, lastSentAt: '2026-03-08 08:00:00', operator: '王工' },
+  { id: '3', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-07', storageStatus: 'sent', pvStatus: null, loadStatus: null, lastSentAt: '2026-03-06 08:00:00', operator: '系统' },
+  { id: '4', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-10', storageStatus: 'pending', pvStatus: 'pending', loadStatus: null, lastSentAt: null, operator: null },
+  { id: '5', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-09', storageStatus: 'sent', pvStatus: 'sent', loadStatus: null, lastSentAt: '2026-03-08 08:30:00', operator: '张工' },
+  { id: '6', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-08', storageStatus: 'sent', pvStatus: 'sent', loadStatus: null, lastSentAt: '2026-03-07 08:00:00', operator: '系统' },
+  { id: '7', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-06', storageStatus: 'failed', pvStatus: 'failed', loadStatus: null, lastSentAt: '2026-03-05 08:00:00', operator: '系统' },
+  { id: '8', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-10', storageStatus: 'pending', pvStatus: 'pending', loadStatus: 'pending', lastSentAt: null, operator: null },
+  { id: '9', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-09', storageStatus: 'sent', pvStatus: 'sent', loadStatus: 'sent', lastSentAt: '2026-03-08 09:15:00', operator: '李工' },
+  { id: '10', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-07', storageStatus: 'failed', pvStatus: 'failed', loadStatus: 'failed', lastSentAt: '2026-03-06 09:15:00', operator: '李工' },
+  { id: '11', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-05', storageStatus: 'sent', pvStatus: 'sent', loadStatus: 'sent', lastSentAt: '2026-03-04 08:00:00', operator: '系统' },
 ];
 
 const ALL_PROJECTS = [
@@ -56,16 +51,18 @@ const ALL_PROJECTS = [
   { name: '朝6-605站', type: 'C' as ProjectType },
 ];
 
+function StatusCell({ status }: { status: CurveStatus | null }) {
+  if (status === null) return <span className="text-muted-foreground">—</span>;
+  const cfg = STATUS_BADGE[status];
+  return <Badge className={cfg.className}>{cfg.label}</Badge>;
+}
+
 const Index = () => {
   const navigate = useNavigate();
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [dateFrom, setDateFrom] = useState<Date | undefined>();
-  const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [activeStrategyType, setActiveStrategyType] = useState<CurveTypeKey | null>(null);
   const [newCurveProject, setNewCurveProject] = useState('');
   const [projectFilterOpen, setProjectFilterOpen] = useState(false);
-  const [dateFromOpen, setDateFromOpen] = useState(false);
-  const [dateToOpen, setDateToOpen] = useState(false);
 
   const toggleProject = useCallback((name: string) => {
     setSelectedProjects(prev =>
@@ -73,17 +70,40 @@ const Index = () => {
     );
   }, []);
 
+  const toggleStrategyType = useCallback((type: CurveTypeKey) => {
+    setActiveStrategyType(prev => prev === type ? null : type);
+  }, []);
+
+  // Compute strategy stats
+  const strategyStats = useMemo((): StrategyStats[] => {
+    const projectsWithStorage = ALL_PROJECTS.length; // all have storage
+    const projectsWithPv = ALL_PROJECTS.filter(p => p.type === 'B' || p.type === 'C').length;
+    const projectsWithLoad = ALL_PROJECTS.filter(p => p.type === 'C').length;
+
+    const count = (field: 'storageStatus' | 'pvStatus' | 'loadStatus', status: CurveStatus) =>
+      MOCK_RECORDS.filter(r => r[field] === status).length;
+
+    return [
+      { type: 'storage', label: '储能计划', icon: null, projectCount: projectsWithStorage, success: count('storageStatus', 'sent'), failed: count('storageStatus', 'failed'), pending: count('storageStatus', 'pending') },
+      { type: 'pv', label: '光伏预测', icon: null, projectCount: projectsWithPv, success: count('pvStatus', 'sent'), failed: count('pvStatus', 'failed'), pending: count('pvStatus', 'pending') },
+      { type: 'load', label: '负荷计划', icon: null, projectCount: projectsWithLoad, success: count('loadStatus', 'sent'), failed: count('loadStatus', 'failed'), pending: count('loadStatus', 'pending') },
+    ];
+  }, []);
+
+  // Filtered records
   const filtered = useMemo(() => {
     return MOCK_RECORDS
       .filter(r => selectedProjects.length === 0 || selectedProjects.includes(r.projectName))
-      .filter(r => statusFilter === 'all' || r.status === statusFilter)
       .filter(r => {
-        if (dateFrom && r.curveDate < format(dateFrom, 'yyyy-MM-dd')) return false;
-        if (dateTo && r.curveDate > format(dateTo, 'yyyy-MM-dd')) return false;
+        if (!activeStrategyType) return true;
+        // Only show records that have this curve type
+        if (activeStrategyType === 'storage') return r.storageStatus !== null;
+        if (activeStrategyType === 'pv') return r.pvStatus !== null;
+        if (activeStrategyType === 'load') return r.loadStatus !== null;
         return true;
       })
       .sort((a, b) => b.curveDate.localeCompare(a.curveDate));
-  }, [selectedProjects, statusFilter, dateFrom, dateTo]);
+  }, [selectedProjects, activeStrategyType]);
 
   const handleNewCurve = () => {
     if (!newCurveProject) return;
@@ -102,7 +122,6 @@ const Index = () => {
 
   const handleExport = () => {
     const ts = format(new Date(), 'yyyyMMddHHmmss');
-    // Demo: just show filename
     alert(`导出文件：调度曲线列表_${ts}.xlsx（演示）`);
   };
 
@@ -112,10 +131,16 @@ const Index = () => {
         <h1 className="text-lg font-semibold text-foreground">运行调控 · 调度曲线</h1>
       </div>
 
-      <div className="p-6 space-y-4">
-        {/* Filters */}
+      <div className="p-6 space-y-6">
+        {/* Area 1: Strategy Summary Cards */}
+        <StrategySummaryCards
+          stats={strategyStats}
+          activeType={activeStrategyType}
+          onToggle={toggleStrategyType}
+        />
+
+        {/* Filters + Actions */}
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Project multi-select dropdown */}
           <Popover open={projectFilterOpen} onOpenChange={setProjectFilterOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 text-sm min-w-[160px] justify-start">
@@ -145,48 +170,11 @@ const Index = () => {
             </PopoverContent>
           </Popover>
 
-          {/* Date range: from */}
-          <Popover open={dateFromOpen} onOpenChange={setDateFromOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9 text-sm min-w-[130px] justify-start">
-                <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                {dateFrom ? format(dateFrom, 'yyyy-MM-dd') : '开始日期'}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={dateFrom} onSelect={(d) => { setDateFrom(d); setDateFromOpen(false); }} />
-            </PopoverContent>
-          </Popover>
-          <span className="text-xs text-muted-foreground">至</span>
-          <Popover open={dateToOpen} onOpenChange={setDateToOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9 text-sm min-w-[130px] justify-start">
-                <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                {dateTo ? format(dateTo, 'yyyy-MM-dd') : '结束日期'}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={dateTo} onSelect={(d) => { setDateTo(d); setDateToOpen(false); }} />
-            </PopoverContent>
-          </Popover>
-          {(dateFrom || dateTo) && (
-            <Button variant="ghost" size="sm" className="h-9 text-xs" onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}>
-              清除日期
-            </Button>
+          {activeStrategyType && (
+            <Badge variant="secondary" className="text-xs cursor-pointer" onClick={() => setActiveStrategyType(null)}>
+              {activeStrategyType === 'storage' ? '储能计划' : activeStrategyType === 'pv' ? '光伏预测' : '负荷计划'} ✕
+            </Badge>
           )}
-
-          {/* Status filter */}
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[120px] h-9 text-sm">
-              <SelectValue placeholder="下发状态" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部状态</SelectItem>
-              <SelectItem value="sent">成功</SelectItem>
-              <SelectItem value="pending">待下发</SelectItem>
-              <SelectItem value="failed">失败</SelectItem>
-            </SelectContent>
-          </Select>
 
           <div className="flex-1" />
           <Button variant="outline" size="sm" onClick={handleExport}>
@@ -231,15 +219,16 @@ const Index = () => {
           </Dialog>
         </div>
 
-        {/* Table */}
+        {/* Area 2: Project Detail Table */}
         <div className="rounded-md border border-panel-border">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[160px]">项目名称</TableHead>
                 <TableHead className="w-[120px]">曲线日期</TableHead>
-                <TableHead className="w-[200px]">曲线类型</TableHead>
-                <TableHead className="w-[80px]">下发状态</TableHead>
+                <TableHead className="w-[100px]">储能计划</TableHead>
+                <TableHead className="w-[100px]">光伏预测</TableHead>
+                <TableHead className="w-[100px]">负荷计划</TableHead>
                 <TableHead className="w-[180px]">最近下发时间</TableHead>
                 <TableHead className="w-[100px]">操作人</TableHead>
                 <TableHead className="w-[80px]">操作</TableHead>
@@ -248,41 +237,27 @@ const Index = () => {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     暂无数据
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map(r => {
-                  const sc = STATUS_CONFIG[r.status];
-                  return (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-medium">{r.projectName}</TableCell>
-                      <TableCell>{r.curveDate}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1.5 flex-wrap">
-                          {r.curveTypes.map(t => (
-                            <Badge key={t} variant="secondary" className={`text-xs ${CURVE_TYPE_LABELS[t].className}`}>
-                              {CURVE_TYPE_LABELS[t].label}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={sc.variant} className={sc.className}>
-                          {sc.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{r.lastSentAt ?? '—'}</TableCell>
-                      <TableCell>{r.operator ?? '—'}</TableCell>
-                      <TableCell>
-                        <Link to={`/curve-detail?id=${r.id}`}>
-                          <Button variant="link" size="sm" className="h-auto p-0">查看详情</Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+                filtered.map(r => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-medium">{r.projectName}</TableCell>
+                    <TableCell>{r.curveDate}</TableCell>
+                    <TableCell><StatusCell status={r.storageStatus} /></TableCell>
+                    <TableCell><StatusCell status={r.pvStatus} /></TableCell>
+                    <TableCell><StatusCell status={r.loadStatus} /></TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{r.lastSentAt ?? '—'}</TableCell>
+                    <TableCell>{r.operator ?? '—'}</TableCell>
+                    <TableCell>
+                      <Link to={`/curve-detail?id=${r.id}`}>
+                        <Button variant="link" size="sm" className="h-auto p-0">查看详情</Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>
