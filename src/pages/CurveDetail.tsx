@@ -65,9 +65,7 @@ const CurveDetail = () => {
   }, [data.projectName]);
 
   const handleDateChange = useCallback((newId: string) => {
-    navigate(`/curve-detail?id=${newId}`, { replace: true });
-    // Force re-mount by using key on component - handled via URL change
-    window.location.href = `/curve-detail?id=${newId}`;
+    navigate(`/curve-detail?id=${newId}`);
   }, [navigate]);
 
   const handleSave = useCallback(() => {
