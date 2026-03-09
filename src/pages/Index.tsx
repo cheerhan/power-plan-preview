@@ -2,7 +2,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -12,6 +11,8 @@ import { Download, Plus, CalendarIcon, Filter } from 'lucide-react';
 import { useState, useMemo, useCallback } from 'react';
 import { CurveStatus, ProjectType } from '@/types/curve';
 import { format } from 'date-fns';
+import { MOCK_CURVE_DB } from '@/data/mock-curves';
+import { generateStrategySummary } from '@/lib/strategy-summary';
 
 interface CurveRecord {
   id: string;
@@ -22,6 +23,7 @@ interface CurveRecord {
   status: CurveStatus;
   lastSentAt: string | null;
   operator: string | null;
+  strategySummary: string;
 }
 
 const CURVE_TYPE_LABELS: Record<string, { label: string; className: string }> = {
@@ -36,19 +38,23 @@ const STATUS_CONFIG: Record<CurveStatus, { label: string; variant: 'default' | '
   failed: { label: '失败', variant: 'destructive', className: '' },
 };
 
-const MOCK_RECORDS: CurveRecord[] = [
-  { id: '1', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-10', curveTypes: ['storage'], status: 'pending', lastSentAt: null, operator: null },
-  { id: '2', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-09', curveTypes: ['storage'], status: 'sent', lastSentAt: '2026-03-08 08:00:00', operator: '王工' },
-  { id: '3', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-07', curveTypes: ['storage'], status: 'sent', lastSentAt: '2026-03-06 08:00:00', operator: '系统' },
-  { id: '4', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-10', curveTypes: ['storage', 'pv'], status: 'pending', lastSentAt: null, operator: null },
-  { id: '5', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-09', curveTypes: ['storage', 'pv'], status: 'sent', lastSentAt: '2026-03-08 08:30:00', operator: '张工' },
-  { id: '6', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-08', curveTypes: ['storage', 'pv'], status: 'sent', lastSentAt: '2026-03-07 08:00:00', operator: '系统' },
-  { id: '7', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-06', curveTypes: ['storage', 'pv'], status: 'failed', lastSentAt: '2026-03-05 08:00:00', operator: '系统' },
-  { id: '8', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-10', curveTypes: ['storage', 'pv', 'load'], status: 'pending', lastSentAt: null, operator: null },
-  { id: '9', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-09', curveTypes: ['storage', 'pv', 'load'], status: 'sent', lastSentAt: '2026-03-08 09:15:00', operator: '李工' },
-  { id: '10', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-07', curveTypes: ['storage', 'pv', 'load'], status: 'failed', lastSentAt: '2026-03-06 09:15:00', operator: '李工' },
-  { id: '11', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-05', curveTypes: ['storage', 'pv', 'load'], status: 'sent', lastSentAt: '2026-03-04 08:00:00', operator: '系统' },
-];
+// Build records from MOCK_CURVE_DB
+const MOCK_RECORDS: CurveRecord[] = Object.values(MOCK_CURVE_DB).map(c => {
+  const curveTypes: ('pv' | 'storage' | 'load')[] = ['storage'];
+  if (c.hasPv) curveTypes.push('pv');
+  if (c.hasLoad) curveTypes.push('load');
+  return {
+    id: c.id,
+    projectName: c.projectName,
+    projectType: c.projectType,
+    curveDate: c.curveDate,
+    curveTypes,
+    status: c.status,
+    lastSentAt: c.lastSentAt,
+    operator: c.operator,
+    strategySummary: generateStrategySummary(c.periods),
+  };
+});
 
 const ALL_PROJECTS = [
   { name: '纯储能测试站', type: 'A' as ProjectType },
@@ -85,6 +91,12 @@ const Index = () => {
       .sort((a, b) => b.curveDate.localeCompare(a.curveDate));
   }, [selectedProjects, statusFilter, dateFrom, dateTo]);
 
+  const stats = useMemo(() => ({
+    pending: filtered.filter(r => r.status === 'pending').length,
+    sent: filtered.filter(r => r.status === 'sent').length,
+    failed: filtered.filter(r => r.status === 'failed').length,
+  }), [filtered]);
+
   const handleNewCurve = () => {
     if (!newCurveProject) return;
     const proj = ALL_PROJECTS.find(p => p.name === newCurveProject);
@@ -102,7 +114,6 @@ const Index = () => {
 
   const handleExport = () => {
     const ts = format(new Date(), 'yyyyMMddHHmmss');
-    // Demo: just show filename
     alert(`导出文件：调度曲线列表_${ts}.xlsx（演示）`);
   };
 
@@ -189,6 +200,14 @@ const Index = () => {
           </Select>
 
           <div className="flex-1" />
+
+          {/* Stats */}
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span>待下发 <strong className="text-foreground">{stats.pending}</strong></span>
+            <span>成功 <strong className="text-status-success">{stats.sent}</strong></span>
+            <span>失败 <strong className="text-destructive">{stats.failed}</strong></span>
+          </div>
+
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="mr-1 h-3.5 w-3.5" />
             导出
@@ -236,19 +255,20 @@ const Index = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[160px]">项目名称</TableHead>
-                <TableHead className="w-[120px]">曲线日期</TableHead>
-                <TableHead className="w-[200px]">曲线类型</TableHead>
+                <TableHead className="w-[140px]">项目名称</TableHead>
+                <TableHead className="w-[110px]">曲线日期</TableHead>
+                <TableHead className="w-[180px]">曲线类型</TableHead>
+                <TableHead className="min-w-[200px]">储能策略概要</TableHead>
                 <TableHead className="w-[80px]">下发状态</TableHead>
-                <TableHead className="w-[180px]">最近下发时间</TableHead>
-                <TableHead className="w-[100px]">操作人</TableHead>
+                <TableHead className="w-[160px]">最近下发时间</TableHead>
+                <TableHead className="w-[80px]">操作人</TableHead>
                 <TableHead className="w-[80px]">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     暂无数据
                   </TableCell>
                 </TableRow>
@@ -268,6 +288,7 @@ const Index = () => {
                           ))}
                         </div>
                       </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{r.strategySummary}</TableCell>
                       <TableCell>
                         <Badge variant={sc.variant} className={sc.className}>
                           {sc.label}
