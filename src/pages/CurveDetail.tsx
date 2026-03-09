@@ -10,7 +10,7 @@ import EnergyStorageChart from '@/components/curve/EnergyStorageChart';
 import PvChart from '@/components/curve/PvChart';
 import LoadChart from '@/components/curve/LoadChart';
 import CurveDataTable from '@/components/curve/CurveDataTable';
-import ActionBar from '@/components/curve/ActionBar';
+
 import DispatchHistory from '@/components/curve/DispatchHistory';
 import DateSidebar from '@/components/curve/DateSidebar';
 import { TimePeriod, CurveDetail as CurveDetailType, ProjectType, CurveStatus } from '@/types/curve';
@@ -132,6 +132,16 @@ const CurveDetail = () => {
         lastSentAt={data.lastSentAt}
         operator={data.operator}
         editing={editing}
+        editable={editable}
+        isHistorical={historical}
+        autoDispatch={autoDispatch}
+        onAutoDispatchChange={setAutoDispatch}
+        onEdit={() => setEditing(true)}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        onSend={handleSend}
+        onDelete={handleDelete}
+        onExport={handleExport}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -247,20 +257,6 @@ const CurveDetail = () => {
           <DispatchHistory />
         </div>
       </div>
-
-      <ActionBar
-        editing={editing}
-        editable={editable}
-        isHistorical={historical}
-        autoDispatch={autoDispatch}
-        onAutoDispatchChange={setAutoDispatch}
-        onEdit={() => setEditing(true)}
-        onSave={handleSave}
-        onCancel={handleCancel}
-        onSend={handleSend}
-        onDelete={handleDelete}
-        onExport={handleExport}
-      />
     </div>
   );
 };
