@@ -54,8 +54,8 @@ const CurveDetail = () => {
   const historical = useMemo(() => !isCurveEditable(data.curveDate), [data.curveDate]);
   const executed = useMemo(() => isCurveExecuted(data.curveDate), [data.curveDate]);
 
-  // Edit mode: only plan line; Readonly + executed: plan + actual
-  const showActual = !editing && executed;
+  // Edit mode: only plan line; Readonly + executed + sent: plan + actual
+  const showActual = !editing && executed && data.status === 'sent';
 
   const tabs = useMemo(() => {
     const t = [{ key: 'storage', label: '储能计划限值' }];
