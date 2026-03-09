@@ -257,20 +257,6 @@ const CurveDetail = () => {
           <DispatchHistory />
         </div>
       </div>
-
-      <ActionBar
-        editing={editing}
-        editable={editable}
-        isHistorical={historical}
-        autoDispatch={autoDispatch}
-        onAutoDispatchChange={setAutoDispatch}
-        onEdit={() => setEditing(true)}
-        onSave={handleSave}
-        onCancel={handleCancel}
-        onSend={handleSend}
-        onDelete={handleDelete}
-        onExport={handleExport}
-      />
     </div>
   );
 };
