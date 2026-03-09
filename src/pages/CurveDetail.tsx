@@ -60,7 +60,7 @@ const CurveDetail = () => {
   const historical = useMemo(() => !isCurveEditable(data.curveDate), [data.curveDate]);
   const executed = useMemo(() => isCurveExecuted(data.curveDate), [data.curveDate]);
 
-  const showActual = !editing && executed && data.status === 'sent';
+  const showActual = !editing && executed;
 
   // Available dates for this project
   const availableDates = useMemo(() => {
