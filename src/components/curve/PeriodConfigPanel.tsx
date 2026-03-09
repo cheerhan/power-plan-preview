@@ -39,7 +39,7 @@ const PeriodConfigPanel = ({ periods, onChange, disabled }: Props) => {
   if (disabled) {
     return (
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">储能计划充放电限值曲线</h3>
+        <h3 className="text-sm font-semibold text-foreground">储能充放电计划</h3>
         <div className="space-y-1.5">
           {periods.map(p => (
             <div key={p.id} className="flex items-center gap-3 rounded-md border border-panel-border bg-panel-bg px-3 py-2 text-xs">
@@ -65,7 +65,7 @@ const PeriodConfigPanel = ({ periods, onChange, disabled }: Props) => {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">储能计划充放电限值曲线</h3>
+        <h3 className="text-sm font-semibold text-foreground">储能充放电计划</h3>
         <Button variant="outline" size="sm" onClick={addPeriod}>
           <Plus className="mr-1 h-3 w-3" />
           新增时段

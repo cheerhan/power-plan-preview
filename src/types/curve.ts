@@ -45,9 +45,9 @@ export const ACTION_LABELS: Record<ActionType, string> = {
 };
 
 export const STATUS_LABELS: Record<CurveStatus, string> = {
-  sent: '已下发',
+  sent: '成功',
   pending: '待下发',
-  failed: '下发失败',
+  failed: '失败',
 };
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {

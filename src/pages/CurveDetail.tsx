@@ -132,7 +132,7 @@ const CurveDetail = () => {
           {/* Load section (conditional: project C with load) */}
           {data.hasLoad && (
             <div className="space-y-2 rounded-md border border-panel-border bg-panel-bg p-3">
-              <h3 className="text-sm font-semibold text-foreground">负荷功率曲线</h3>
+              <h3 className="text-sm font-semibold text-foreground">负荷信息</h3>
               <p className="text-xs text-muted-foreground">
                 本项目已配置负荷控制能力。当前版本仅展示负荷实际功率曲线，负荷计划配置功能后续迭代实现。
               </p>
