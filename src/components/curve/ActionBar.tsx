@@ -11,8 +11,6 @@ interface Props {
   isHistorical: boolean;
   autoDispatch: boolean;
   onAutoDispatchChange: (v: boolean) => void;
-  showHistory: boolean;
-  onToggleHistory: () => void;
   onEdit: () => void;
   onSave: () => void;
   onCancel: () => void;
@@ -23,22 +21,16 @@ interface Props {
 
 const ActionBar = ({
   editing, editable, isHistorical, autoDispatch, onAutoDispatchChange,
-  showHistory, onToggleHistory,
   onEdit, onSave, onCancel, onSend, onDelete, onExport,
 }: Props) => (
   <div className="flex items-center justify-between border-t border-panel-border px-6 py-3">
     {/* Left: auto dispatch + history — always visible except editing */}
     <div className="flex items-center gap-4">
       {!editing && (
-        <>
-          <div className="flex items-center gap-2">
-            <Switch checked={autoDispatch} onCheckedChange={onAutoDispatchChange} id="auto-dispatch" />
-            <Label htmlFor="auto-dispatch" className="text-sm cursor-pointer">自动下发</Label>
-          </div>
-          <button onClick={onToggleHistory} className="text-sm text-primary hover:underline">
-            {showHistory ? '收起下发记录' : '下发记录'}
-          </button>
-        </>
+        <div className="flex items-center gap-2">
+          <Switch checked={autoDispatch} onCheckedChange={onAutoDispatchChange} id="auto-dispatch" />
+          <Label htmlFor="auto-dispatch" className="text-sm cursor-pointer">自动下发</Label>
+        </div>
       )}
     </div>
 
