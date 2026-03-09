@@ -10,7 +10,7 @@ import EnergyStorageChart from '@/components/curve/EnergyStorageChart';
 import PvChart from '@/components/curve/PvChart';
 import LoadChart from '@/components/curve/LoadChart';
 import CurveDataTable from '@/components/curve/CurveDataTable';
-import ActionBar from '@/components/curve/ActionBar';
+
 import DispatchHistory from '@/components/curve/DispatchHistory';
 import DateSidebar from '@/components/curve/DateSidebar';
 import { TimePeriod, CurveDetail as CurveDetailType, ProjectType, CurveStatus } from '@/types/curve';
