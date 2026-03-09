@@ -39,7 +39,10 @@ const PeriodConfigPanel = ({ periods, onChange, disabled }: Props) => {
   if (disabled) {
     return (
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">储能充放电计划</h3>
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">储能充放电计划</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed mt-1">展示储能系统每天各时段的充电、放电或禁止动作计划（由运营人员配置），下发到现场控制器后即作为次日实际运行的依据。</p>
+        </div>
         <div className="space-y-1.5">
           {periods.map(p => (
             <div key={p.id} className="flex items-center gap-3 rounded-md border border-panel-border bg-panel-bg px-3 py-2 text-xs">
@@ -65,7 +68,10 @@ const PeriodConfigPanel = ({ periods, onChange, disabled }: Props) => {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">储能充放电计划</h3>
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">储能充放电计划</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed mt-1">展示储能系统每天各时段的充电、放电或禁止动作计划（由运营人员配置），下发到现场控制器后即作为次日实际运行的依据。</p>
+        </div>
         <Button variant="outline" size="sm" onClick={addPeriod}>
           <Plus className="mr-1 h-3 w-3" />
           新增时段
