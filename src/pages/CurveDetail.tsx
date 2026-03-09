@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import DetailHeader from '@/components/curve/DetailHeader';
 import PeriodConfigPanel from '@/components/curve/PeriodConfigPanel';
@@ -149,25 +149,30 @@ const CurveDetail = () => {
         </div>
 
         {/* Right chart area */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-2">储能计划限值</h3>
-            <EnergyStorageChart periods={activePeriods} showActual={showActual} />
-          </div>
+        <div className="flex-1 overflow-y-auto p-5">
+          <Tabs defaultValue="storage">
+            <TabsList>
+              <TabsTrigger value="storage">储能计划限值</TabsTrigger>
+              {data.hasPv && <TabsTrigger value="pv">光伏预测功率</TabsTrigger>}
+              {data.hasLoad && <TabsTrigger value="load">负荷曲线</TabsTrigger>}
+            </TabsList>
 
-          {data.hasPv && (
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-2">光伏预测功率</h3>
-              <PvChart showActual={showActual} />
-            </div>
-          )}
+            <TabsContent value="storage">
+              <EnergyStorageChart periods={activePeriods} showActual={showActual} />
+            </TabsContent>
 
-          {data.hasLoad && (
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-2">负荷曲线</h3>
-              <LoadChart />
-            </div>
-          )}
+            {data.hasPv && (
+              <TabsContent value="pv">
+                <PvChart showActual={showActual} />
+              </TabsContent>
+            )}
+
+            {data.hasLoad && (
+              <TabsContent value="load">
+                <LoadChart />
+              </TabsContent>
+            )}
+          </Tabs>
 
           {/* Dispatch history shown below charts when toggled */}
           {showHistory && (
