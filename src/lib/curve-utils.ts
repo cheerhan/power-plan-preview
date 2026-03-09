@@ -10,14 +10,12 @@ export function validatePeriods(periods: TimePeriod[]): string | null {
   
   const sorted = [...periods].sort((a, b) => a.startTime.localeCompare(b.startTime));
   
-  // Check overlap
   for (let i = 1; i < sorted.length; i++) {
     if (sorted[i].startTime < sorted[i - 1].endTime) {
       return `时段 ${sorted[i - 1].startTime}-${sorted[i - 1].endTime} 与 ${sorted[i].startTime}-${sorted[i].endTime} 存在重叠`;
     }
   }
   
-  // Check full 24h coverage
   if (sorted[0].startTime !== '00:00') {
     return `时段未覆盖 00:00-${sorted[0].startTime}，需覆盖完整 24 小时`;
   }
@@ -76,6 +74,24 @@ export function generateMockPvData(): ChartPoint[] {
   return points;
 }
 
+export function generateMockLoadData(): ChartPoint[] {
+  const points: ChartPoint[] = [];
+  for (let i = 0; i < 96; i++) {
+    const h = Math.floor(i / 4);
+    const m = (i % 4) * 15;
+    const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    const hour = h + m / 60;
+    // Simulate industrial load pattern with peaks at 9-11 and 14-16
+    const base = 40;
+    const morning = 60 * Math.exp(-0.5 * ((hour - 10) / 1.5) ** 2);
+    const afternoon = 50 * Math.exp(-0.5 * ((hour - 15) / 1.5) ** 2);
+    const night = -20 * Math.exp(-0.5 * ((hour - 3) / 2) ** 2);
+    const actual = Math.max(0, base + morning + afternoon + night + (Math.random() - 0.5) * 10);
+    points.push({ time, plan: null, actual: Math.round(actual * 10) / 10 });
+  }
+  return points;
+}
+
 export function isCurveEditable(curveDate: string): boolean {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -84,4 +100,22 @@ export function isCurveEditable(curveDate: string): boolean {
   const d = new Date(curveDate);
   d.setHours(0, 0, 0, 0);
   return d.getTime() >= today.getTime() && d.getTime() <= tomorrow.getTime();
+}
+
+export function isCurveExecuted(curveDate: string): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(curveDate);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime() < today.getTime();
+}
+
+export function getTomorrowDate(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+export function getTodayDate(): string {
+  return new Date().toISOString().slice(0, 10);
 }
