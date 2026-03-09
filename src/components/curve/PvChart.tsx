@@ -4,6 +4,7 @@ import { generateMockPvData } from '@/lib/curve-utils';
 
 interface Props {
   showActual?: boolean;
+  chartHeight?: number;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -20,11 +21,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-const PvChart = ({ showActual = false }: Props) => {
+const PvChart = ({ showActual = false, chartHeight = 400 }: Props) => {
   const data = useMemo(() => generateMockPvData(), []);
 
   return (
-    <div className="h-[400px] w-full">
+    <div style={{ height: chartHeight }} className="w-full">
       <ResponsiveContainer>
         <LineChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 15% 90%)" />

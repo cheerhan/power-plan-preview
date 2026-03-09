@@ -2,6 +2,10 @@ import { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { generateMockLoadData } from '@/lib/curve-utils';
 
+interface Props {
+  chartHeight?: number;
+}
+
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
@@ -16,11 +20,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-const LoadChart = () => {
+const LoadChart = ({ chartHeight = 400 }: Props) => {
   const data = useMemo(() => generateMockLoadData(), []);
 
   return (
-    <div className="h-[400px] w-full">
+    <div style={{ height: chartHeight }} className="w-full">
       <ResponsiveContainer>
         <LineChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 15% 90%)" />
