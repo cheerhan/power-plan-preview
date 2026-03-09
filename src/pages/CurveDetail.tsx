@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 import { toast } from '@/hooks/use-toast';
 import DetailHeader from '@/components/curve/DetailHeader';
@@ -30,6 +30,7 @@ function buildNewCurve(projectName: string, projectType: ProjectType): CurveDeta
 
 const CurveDetail = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const id = searchParams.get('id');
   const isNew = searchParams.get('new') === '1';
   const shouldEdit = searchParams.get('edit') === '1';
@@ -54,9 +55,20 @@ const CurveDetail = () => {
   const historical = useMemo(() => !isCurveEditable(data.curveDate), [data.curveDate]);
   const executed = useMemo(() => isCurveExecuted(data.curveDate), [data.curveDate]);
 
-  // Edit mode: only plan line; Readonly + executed + sent: plan + actual
   const showActual = !editing && executed && data.status === 'sent';
 
+  // Build available dates for this project from MOCK_CURVE_DB
+  const availableDates = useMemo(() => {
+    return Object.values(MOCK_CURVE_DB)
+      .filter(c => c.projectName === data.projectName)
+      .map(c => ({ date: c.curveDate, id: c.id, status: c.status }));
+  }, [data.projectName]);
+
+  const handleDateChange = useCallback((newId: string) => {
+    navigate(`/curve-detail?id=${newId}`, { replace: true });
+    // Force re-mount by using key on component - handled via URL change
+    window.location.href = `/curve-detail?id=${newId}`;
+  }, [navigate]);
 
   const handleSave = useCallback(() => {
     const err = validatePeriods(periods);
@@ -97,15 +109,15 @@ const CurveDetail = () => {
         lastSentAt={data.lastSentAt}
         operator={data.operator}
         editing={editing}
+        availableDates={availableDates}
+        onDateChange={handleDateChange}
       />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel: config area */}
         <div className="w-[420px] shrink-0 overflow-y-auto border-r border-panel-border p-5 space-y-6">
-          {/* Storage period config (always shown) */}
           <PeriodConfigPanel periods={activePeriods} onChange={setPeriods} disabled={!editing} />
 
-          {/* PV section (conditional: project B or C with PV) */}
           {data.hasPv && (
             <div className="space-y-2 rounded-md border border-panel-border bg-panel-bg p-3">
               <h3 className="text-sm font-semibold text-foreground">光伏预测功率曲线</h3>
@@ -123,7 +135,6 @@ const CurveDetail = () => {
             </div>
           )}
 
-          {/* Load section (conditional: project C with load) */}
           {data.hasLoad && (
             <div className="space-y-2 rounded-md border border-panel-border bg-panel-bg p-3">
               <h3 className="text-sm font-semibold text-foreground">负荷信息</h3>
@@ -133,7 +144,6 @@ const CurveDetail = () => {
             </div>
           )}
 
-          {/* Scenario info banner */}
           <div className="rounded-md border border-panel-border bg-panel-bg p-3 space-y-1">
             <h4 className="text-xs font-semibold text-muted-foreground">当前场景</h4>
             <p className="text-xs text-muted-foreground">
@@ -169,7 +179,6 @@ const CurveDetail = () => {
             </div>
           )}
 
-          {/* Dispatch history shown below charts when toggled */}
           {showHistory && (
             <div className="mt-4">
               <DispatchHistory />
