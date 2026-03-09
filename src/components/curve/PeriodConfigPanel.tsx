@@ -7,7 +7,7 @@ import { TimePeriod, ActionType, ACTION_LABELS, TIME_OPTIONS } from '@/types/cur
 interface Props {
   periods: TimePeriod[];
   onChange: (periods: TimePeriod[]) => void;
-  disabled?: boolean;
+  disabled?: boolean; // true = readonly mode
 }
 
 const PeriodConfigPanel = ({ periods, onChange, disabled }: Props) => {
@@ -35,22 +35,47 @@ const PeriodConfigPanel = ({ periods, onChange, disabled }: Props) => {
     onChange(periods.filter(p => p.id !== id));
   };
 
+  // Readonly: show summary table
+  if (disabled) {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-foreground">储能计划充放电限值曲线</h3>
+        <div className="space-y-1.5">
+          {periods.map(p => (
+            <div key={p.id} className="flex items-center gap-3 rounded-md border border-panel-border bg-panel-bg px-3 py-2 text-xs">
+              <span className="font-medium w-[130px]">{p.startTime} – {p.endTime}</span>
+              <span className={`px-2 py-0.5 rounded-sm ${
+                p.actionType === 'charge' ? 'bg-chart-charge text-foreground' :
+                p.actionType === 'discharge' ? 'bg-chart-discharge text-foreground' :
+                'bg-muted text-muted-foreground'
+              }`}>
+                {ACTION_LABELS[p.actionType]}
+              </span>
+              {p.actionType !== 'idle' && (
+                <span className="text-muted-foreground">{p.powerLimit} kW</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Edit mode: full controls
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">储能计划充放电限值曲线</h3>
-        {!disabled && (
-          <Button variant="outline" size="sm" onClick={addPeriod}>
-            <Plus className="mr-1 h-3 w-3" />
-            新增时段
-          </Button>
-        )}
+        <Button variant="outline" size="sm" onClick={addPeriod}>
+          <Plus className="mr-1 h-3 w-3" />
+          新增时段
+        </Button>
       </div>
 
       <div className="space-y-2">
         {periods.map((p) => (
           <div key={p.id} className="flex items-center gap-2 rounded-md border border-panel-border bg-panel-bg p-2">
-            <Select value={p.startTime} onValueChange={v => updatePeriod(p.id, 'startTime', v)} disabled={disabled}>
+            <Select value={p.startTime} onValueChange={v => updatePeriod(p.id, 'startTime', v)}>
               <SelectTrigger className="w-[90px] h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -59,7 +84,7 @@ const PeriodConfigPanel = ({ periods, onChange, disabled }: Props) => {
               </SelectContent>
             </Select>
             <span className="text-xs text-muted-foreground">至</span>
-            <Select value={p.endTime} onValueChange={v => updatePeriod(p.id, 'endTime', v)} disabled={disabled}>
+            <Select value={p.endTime} onValueChange={v => updatePeriod(p.id, 'endTime', v)}>
               <SelectTrigger className="w-[90px] h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -67,7 +92,7 @@ const PeriodConfigPanel = ({ periods, onChange, disabled }: Props) => {
                 {TIME_OPTIONS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={p.actionType} onValueChange={v => updatePeriod(p.id, 'actionType', v as ActionType)} disabled={disabled}>
+            <Select value={p.actionType} onValueChange={v => updatePeriod(p.id, 'actionType', v as ActionType)}>
               <SelectTrigger className="w-[100px] h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -83,11 +108,11 @@ const PeriodConfigPanel = ({ periods, onChange, disabled }: Props) => {
               className="w-[80px] h-8 text-xs"
               value={p.powerLimit}
               onChange={e => updatePeriod(p.id, 'powerLimit', Number(e.target.value))}
-              disabled={disabled || p.actionType === 'idle'}
+              disabled={p.actionType === 'idle'}
               placeholder="kW"
             />
             <span className="text-xs text-muted-foreground">kW</span>
-            {!disabled && periods.length > 1 && (
+            {periods.length > 1 && (
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => removePeriod(p.id)}>
                 <Trash2 className="h-3.5 w-3.5 text-destructive" />
               </Button>

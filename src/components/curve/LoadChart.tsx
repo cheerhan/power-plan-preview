@@ -1,10 +1,6 @@
 import { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { generateMockPvData } from '@/lib/curve-utils';
-
-interface Props {
-  showActual?: boolean;
-}
+import { generateMockLoadData } from '@/lib/curve-utils';
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
@@ -20,8 +16,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-const PvChart = ({ showActual = false }: Props) => {
-  const data = useMemo(() => generateMockPvData(), []);
+const LoadChart = () => {
+  const data = useMemo(() => generateMockLoadData(), []);
 
   return (
     <div className="h-[400px] w-full">
@@ -32,14 +28,11 @@ const PvChart = ({ showActual = false }: Props) => {
           <YAxis tick={{ fontSize: 10 }} label={{ value: '功率 (kW)', angle: -90, position: 'insideLeft', fontSize: 11 }} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
-          <Line type="monotone" dataKey="plan" name="预测功率" stroke="hsl(145 60% 45%)" strokeWidth={2} dot={false} />
-          {showActual && (
-            <Line type="monotone" dataKey="actual" name="实际功率" stroke="hsl(145 50% 70%)" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
-          )}
+          <Line type="monotone" dataKey="actual" name="负荷实际功率" stroke="hsl(210 70% 50%)" strokeWidth={2} dot={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>
   );
 };
 
-export default PvChart;
+export default LoadChart;
