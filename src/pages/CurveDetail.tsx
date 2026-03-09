@@ -55,7 +55,6 @@ const CurveDetail = () => {
   const [editing, setEditing] = useState(isNew || shouldEdit);
   const [autoDispatch, setAutoDispatch] = useState(false);
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
-  const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
 
   const editable = useMemo(() => isCurveEditable(data.curveDate), [data.curveDate]);
   const historical = useMemo(() => !isCurveEditable(data.curveDate), [data.curveDate]);
