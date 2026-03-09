@@ -159,25 +159,29 @@ const CurveDetail = () => {
           <PeriodConfigPanel periods={activePeriods} onChange={setPeriods} disabled={!editing} />
 
           {data.hasPv && (
-            <div className="space-y-2 rounded-md border border-panel-border bg-panel-bg p-3">
-              <h3 className="text-sm font-semibold text-foreground">光伏预测功率曲线</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                系统根据气象和历史发电数据，自动预测本站点次日的光伏发电功率（每 15 分钟一个点），用于协调储能充放电和负荷的调度安排。
-              </p>
-              {editing && (
-                <p className="text-xs text-primary">
-                  提示：可在右侧查看预测曲线，结合预测结果配置储能时段。
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">光伏预测功率曲线</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                  系统根据气象和历史发电数据，自动预测本站点次日的光伏发电功率（每 15 分钟一个点），用于协调储能充放电和负荷的调度安排。
                 </p>
-              )}
+                {editing && (
+                  <p className="text-xs text-primary mt-1">
+                    提示：可在右侧查看预测曲线，结合预测结果配置储能时段。
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
           {data.hasLoad && (
-            <div className="space-y-2 rounded-md border border-panel-border bg-panel-bg p-3">
-              <h3 className="text-sm font-semibold text-foreground">负荷计划曲线</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                展示本站点可调负荷的功率曲线，调度计划基于可调负荷制定，与储能、光伏协调配合实现源网荷储整体优化。
-              </p>
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">负荷计划曲线</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                  展示本站点可调负荷的功率曲线，调度计划基于可调负荷制定，与储能、光伏协调配合实现源网荷储整体优化。
+                </p>
+              </div>
             </div>
           )}
         </div>
