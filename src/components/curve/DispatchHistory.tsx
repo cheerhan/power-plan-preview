@@ -23,7 +23,7 @@ const MOCK_HISTORY: DispatchRecord[] = [
 ];
 
 const DispatchHistory = () => {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const successCount = MOCK_HISTORY.filter(r => r.status === 'success').length;
   const failedCount = MOCK_HISTORY.filter(r => r.status === 'failed').length;
 
