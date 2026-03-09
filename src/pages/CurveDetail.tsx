@@ -57,12 +57,6 @@ const CurveDetail = () => {
   // Edit mode: only plan line; Readonly + executed + sent: plan + actual
   const showActual = !editing && executed && data.status === 'sent';
 
-  const tabs = useMemo(() => {
-    const t = [{ key: 'storage', label: '储能计划限值' }];
-    if (data.hasPv) t.push({ key: 'pv', label: '光伏预测功率' });
-    if (data.hasLoad) t.push({ key: 'load', label: '负荷曲线' });
-    return t;
-  }, [data.hasPv, data.hasLoad]);
 
   const handleSave = useCallback(() => {
     const err = validatePeriods(periods);
