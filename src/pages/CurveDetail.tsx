@@ -186,32 +186,66 @@ const CurveDetail = () => {
           </div>
         </div>
 
-        {/* Right chart area */}
+        {/* Right chart/table area */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-2">储能计划限值</h3>
-            <EnergyStorageChart periods={activePeriods} showActual={showActual} chartHeight={chartHeight} />
+          {/* View mode toggle */}
+          <div className="flex items-center justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn("h-8 gap-1.5 text-xs", viewMode === 'chart' && "bg-accent text-accent-foreground")}
+              onClick={() => setViewMode('chart')}
+            >
+              <BarChart3 className="h-3.5 w-3.5" />
+              图表
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn("h-8 gap-1.5 text-xs", viewMode === 'table' && "bg-accent text-accent-foreground")}
+              onClick={() => setViewMode('table')}
+            >
+              <TableIcon className="h-3.5 w-3.5" />
+              数据表
+            </Button>
           </div>
 
+          {/* Storage */}
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-2">储能计划限值</h3>
+            {viewMode === 'chart' ? (
+              <EnergyStorageChart periods={activePeriods} showActual={showActual} chartHeight={chartHeight} />
+            ) : (
+              <CurveDataTable type="storage" periods={activePeriods} showActual={showActual} />
+            )}
+          </div>
+
+          {/* PV */}
           {data.hasPv && (
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-2">光伏预测功率</h3>
-              <PvChart showActual={showActual} chartHeight={chartHeight} />
+              {viewMode === 'chart' ? (
+                <PvChart showActual={showActual} chartHeight={chartHeight} />
+              ) : (
+                <CurveDataTable type="pv" showActual={showActual} />
+              )}
             </div>
           )}
 
+          {/* Load */}
           {data.hasLoad && (
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-2">负荷曲线</h3>
-              <LoadChart chartHeight={chartHeight} />
+              {viewMode === 'chart' ? (
+                <LoadChart chartHeight={chartHeight} />
+              ) : (
+                <CurveDataTable type="load" />
+              )}
             </div>
           )}
 
-          {showHistory && (
-            <div className="mt-4">
-              <DispatchHistory />
-            </div>
-          )}
+          {/* Dispatch history */}
+          <DispatchHistory />
         </div>
       </div>
 
