@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { toast } from '@/hooks/use-toast';
 import DetailHeader from '@/components/curve/DetailHeader';
 import PeriodConfigPanel from '@/components/curve/PeriodConfigPanel';
