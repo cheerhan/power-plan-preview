@@ -107,7 +107,8 @@ export function isCurveExecuted(curveDate: string): boolean {
   today.setHours(0, 0, 0, 0);
   const d = new Date(curveDate);
   d.setHours(0, 0, 0, 0);
-  return d.getTime() < today.getTime();
+  // Executed if date is in the past, or if it's today (execution day has arrived)
+  return d.getTime() <= today.getTime();
 }
 
 export function getTomorrowDate(): string {
