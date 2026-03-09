@@ -132,6 +132,16 @@ const CurveDetail = () => {
         lastSentAt={data.lastSentAt}
         operator={data.operator}
         editing={editing}
+        editable={editable}
+        isHistorical={historical}
+        autoDispatch={autoDispatch}
+        onAutoDispatchChange={setAutoDispatch}
+        onEdit={() => setEditing(true)}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        onSend={handleSend}
+        onDelete={handleDelete}
+        onExport={handleExport}
       />
 
       <div className="flex flex-1 overflow-hidden">
