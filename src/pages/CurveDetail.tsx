@@ -9,7 +9,8 @@ import PvChart from '@/components/curve/PvChart';
 import LoadChart from '@/components/curve/LoadChart';
 import ActionBar from '@/components/curve/ActionBar';
 import DispatchHistory from '@/components/curve/DispatchHistory';
-import { TimePeriod, CurveDetail as CurveDetailType, ProjectType } from '@/types/curve';
+import DateSidebar from '@/components/curve/DateSidebar';
+import { TimePeriod, CurveDetail as CurveDetailType, ProjectType, CurveStatus } from '@/types/curve';
 import { validatePeriods, isCurveEditable, isCurveExecuted, getTomorrowDate } from '@/lib/curve-utils';
 import { MOCK_CURVE_DB } from '@/data/mock-curves';
 
@@ -57,7 +58,7 @@ const CurveDetail = () => {
 
   const showActual = !editing && executed && data.status === 'sent';
 
-  // Build available dates for this project from MOCK_CURVE_DB
+  // Available dates for this project
   const availableDates = useMemo(() => {
     return Object.values(MOCK_CURVE_DB)
       .filter(c => c.projectName === data.projectName)
@@ -67,6 +68,26 @@ const CurveDetail = () => {
   const handleDateChange = useCallback((newId: string) => {
     navigate(`/curve-detail?id=${newId}`);
   }, [navigate]);
+
+  // Chart count for dynamic height
+  const chartCount = useMemo(() => {
+    let count = 1; // storage always
+    if (data.hasPv) count++;
+    if (data.hasLoad) count++;
+    return count;
+  }, [data.hasPv, data.hasLoad]);
+
+  // Dynamic chart height: fill available space
+  // Header ~57px, ActionBar ~56px, section titles ~32px each, spacing ~24px each, padding ~40px
+  const chartHeight = useMemo(() => {
+    const headerHeight = 57;
+    const actionBarHeight = 56;
+    const padding = 40;
+    const sectionTitleAndGap = 56; // title + margin per chart
+    const availableHeight = window.innerHeight - headerHeight - actionBarHeight - padding - (sectionTitleAndGap * chartCount);
+    const perChart = Math.max(200, Math.floor(availableHeight / chartCount));
+    return Math.min(perChart, 500); // cap at 500
+  }, [chartCount]);
 
   const handleSave = useCallback(() => {
     const err = validatePeriods(periods);
@@ -107,13 +128,20 @@ const CurveDetail = () => {
         lastSentAt={data.lastSentAt}
         operator={data.operator}
         editing={editing}
-        availableDates={availableDates}
-        onDateChange={handleDateChange}
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left panel: config area */}
-        <div className="w-[420px] shrink-0 overflow-y-auto border-r border-panel-border p-5 space-y-6">
+        {/* Left sidebar: calendar + config */}
+        <div className="w-[420px] shrink-0 overflow-y-auto border-r border-panel-border p-5 space-y-5">
+          {/* Fixed calendar for date navigation */}
+          <DateSidebar
+            currentDate={data.curveDate}
+            availableDates={availableDates}
+            onDateChange={handleDateChange}
+            disabled={editing}
+          />
+
+          {/* Storage period config */}
           <PeriodConfigPanel periods={activePeriods} onChange={setPeriods} disabled={!editing} />
 
           {data.hasPv && (
@@ -122,12 +150,9 @@ const CurveDetail = () => {
               <p className="text-xs text-muted-foreground">
                 已配置光伏预测算法，预测数据由系统自动生成。
               </p>
-              <p className="text-xs text-muted-foreground">
-                光伏预测曲线供运营人员参考，用于决策储能充放电时段配置。
-              </p>
               {editing && (
                 <p className="text-xs text-primary">
-                  提示：可在右侧「光伏预测功率」Tab 查看预测曲线，结合预测结果配置储能时段。
+                  提示：可在右侧查看预测曲线，结合预测结果配置储能时段。
                 </p>
               )}
             </div>
@@ -137,7 +162,7 @@ const CurveDetail = () => {
             <div className="space-y-2 rounded-md border border-panel-border bg-panel-bg p-3">
               <h3 className="text-sm font-semibold text-foreground">负荷信息</h3>
               <p className="text-xs text-muted-foreground">
-                本项目已配置负荷控制能力。当前版本仅展示负荷实际功率曲线，负荷计划配置功能后续迭代实现。
+                本项目已配置负荷控制能力。当前版本仅展示负荷实际功率曲线。
               </p>
             </div>
           )}
@@ -150,30 +175,30 @@ const CurveDetail = () => {
               曲线日期：{data.curveDate}
               {' · '}
               {historical ? '历史曲线（只读）' : editing ? '编辑态' : '只读态'}
-              {!editing && executed && ' · 已执行（显示计划线+实际线）'}
-              {!editing && !executed && !historical && ' · 未执行（仅显示计划线）'}
+              {!editing && executed && ' · 已执行（计划+实际）'}
+              {!editing && !executed && !historical && ' · 未执行（仅计划）'}
             </p>
           </div>
         </div>
 
         {/* Right chart area */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-2">储能计划限值</h3>
-            <EnergyStorageChart periods={activePeriods} showActual={showActual} />
+            <EnergyStorageChart periods={activePeriods} showActual={showActual} chartHeight={chartHeight} />
           </div>
 
           {data.hasPv && (
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-2">光伏预测功率</h3>
-              <PvChart showActual={showActual} />
+              <PvChart showActual={showActual} chartHeight={chartHeight} />
             </div>
           )}
 
           {data.hasLoad && (
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-2">负荷曲线</h3>
-              <LoadChart />
+              <LoadChart chartHeight={chartHeight} />
             </div>
           )}
 

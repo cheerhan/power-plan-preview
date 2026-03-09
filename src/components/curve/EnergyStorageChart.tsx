@@ -6,7 +6,8 @@ import { ACTION_LABELS } from '@/types/curve';
 
 interface Props {
   periods: TimePeriod[];
-  showActual?: boolean; // true = show actual line (readonly + executed), false = edit preview
+  showActual?: boolean;
+  chartHeight?: number;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -23,7 +24,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-const EnergyStorageChart = ({ periods, showActual = false }: Props) => {
+const EnergyStorageChart = ({ periods, showActual = false, chartHeight = 400 }: Props) => {
   const data = useMemo(() => {
     const plan = periodsToChartData(periods);
     return showActual ? generateMockActual(plan) : plan;
@@ -50,7 +51,7 @@ const EnergyStorageChart = ({ periods, showActual = false }: Props) => {
   }, [periods]);
 
   return (
-    <div className="h-[400px] w-full">
+    <div style={{ height: chartHeight }} className="w-full">
       <ResponsiveContainer>
         <LineChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 15% 90%)" />
