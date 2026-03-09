@@ -155,44 +155,35 @@ const CurveDetail = () => {
             disabled={editing}
           />
 
-          {/* Storage period config */}
+          {/* Storage info + period config */}
+          <div className="space-y-3 rounded-md border border-panel-border bg-panel-bg p-3">
+            <h3 className="text-sm font-semibold text-foreground">储能充放电计划</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {editing
+                ? '本页配置储能在 0–24 点的充放电计划：按时段设置充电、放电或禁止动作，并设定功率上限（kW）。配置后将下发至现场控制器，作为次日运行的基准。储能额定功率与容量以现场配置为准。'
+                : '上述时段计划已保存，下发后现场将按此限值执行。储能额定功率以现场配置为准。'}
+            </p>
+          </div>
+
           <PeriodConfigPanel periods={activePeriods} onChange={setPeriods} disabled={!editing} />
 
           {data.hasPv && (
             <div className="space-y-2 rounded-md border border-panel-border bg-panel-bg p-3">
               <h3 className="text-sm font-semibold text-foreground">光伏预测功率曲线</h3>
-              <p className="text-xs text-muted-foreground">
-                已配置光伏预测算法，预测数据由系统自动生成。
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                系统根据气象与历史发电数据，预测本站点次日光伏出力（逐 15 分钟功率曲线），用于制定储能充放电和负荷安排。预测结果每日自动更新，本页仅展示与对比，不参与考核；实际发电受天气影响，与预测存在偏差属正常现象。数据由预测算法自动生成，无需人工录入。
               </p>
-              {editing && (
-                <p className="text-xs text-primary">
-                  提示：可在右侧查看预测曲线，结合预测结果配置储能时段。
-                </p>
-              )}
             </div>
           )}
 
           {data.hasLoad && (
             <div className="space-y-2 rounded-md border border-panel-border bg-panel-bg p-3">
               <h3 className="text-sm font-semibold text-foreground">负荷信息</h3>
-              <p className="text-xs text-muted-foreground">
-                本项目已配置负荷控制能力。当前版本仅展示负荷实际功率曲线。
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                本页调度曲线中的负荷相关计划，基于本站点可调负荷（可控设备类型与容量以项目/设备配置为准）。右侧负荷曲线展示与储能、光伏的协调关系；可调负荷规模与设备列表由项目配置或设备台账拉取，若有则在本区块简要展示。
               </p>
             </div>
           )}
-
-          <div className="rounded-md border border-panel-border bg-panel-bg p-3 space-y-1">
-            <h4 className="text-xs font-semibold text-muted-foreground">当前场景</h4>
-            <p className="text-xs text-muted-foreground">
-              项目类型：{data.projectType === 'A' ? '纯储能' : data.projectType === 'B' ? '光储' : '光储荷'}
-              {' · '}
-              曲线日期：{data.curveDate}
-              {' · '}
-              {historical ? '历史曲线（只读）' : editing ? '编辑态' : '只读态'}
-              {!editing && executed && ' · 已执行（计划+实际）'}
-              {!editing && !executed && !historical && ' · 未执行（仅计划）'}
-            </p>
-          </div>
         </div>
 
         {/* Right chart/table area */}
