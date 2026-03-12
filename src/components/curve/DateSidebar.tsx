@@ -1,29 +1,34 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { CurveStatus } from '@/types/curve';
 import { cn } from '@/lib/utils';
 import { zhCN } from 'date-fns/locale';
-import { Sun, Cloud, CloudRain, CloudSnow, CloudDrizzle, CloudSun } from 'lucide-react';
+import { Sun, Cloud, CloudRain, CloudSnow, CloudDrizzle, CloudSun, Send, CloudLightning } from 'lucide-react';
 
-type WeatherType = 'sunny' | 'cloudy' | 'partly_cloudy' | 'rainy' | 'drizzle' | 'snow';
+export type WeatherType = 'sunny' | 'cloudy' | 'partly_cloudy' | 'rainy' | 'drizzle' | 'snow' | 'thunderstorm';
 
-interface WeatherInfo {
+export interface WeatherInfo {
   type: WeatherType;
   tempHigh: number;
   tempLow: number;
 }
 
-const WEATHER_CONFIG: Record<WeatherType, { icon: React.ElementType; label: string; color: string }> = {
+export const WEATHER_CONFIG: Record<WeatherType, { icon: React.ElementType; label: string; color: string }> = {
   sunny: { icon: Sun, label: '晴', color: 'text-status-warning' },
   partly_cloudy: { icon: CloudSun, label: '多云', color: 'text-status-pending' },
   cloudy: { icon: Cloud, label: '阴', color: 'text-muted-foreground' },
   drizzle: { icon: CloudDrizzle, label: '小雨', color: 'text-status-pending' },
   rainy: { icon: CloudRain, label: '中雨', color: 'text-status-pending' },
   snow: { icon: CloudSnow, label: '雪', color: 'text-muted-foreground' },
+  thunderstorm: { icon: CloudLightning, label: '雷阵雨', color: 'text-destructive' },
 };
 
-// Mock weather data keyed by date
-const MOCK_WEATHER: Record<string, WeatherInfo> = {
+// Extended mock weather data
+export const MOCK_WEATHER: Record<string, WeatherInfo> = {
+  '2026-03-01': { type: 'cloudy', tempHigh: 10, tempLow: 2 },
+  '2026-03-02': { type: 'rainy', tempHigh: 8, tempLow: 3 },
+  '2026-03-03': { type: 'drizzle', tempHigh: 9, tempLow: 3 },
+  '2026-03-04': { type: 'partly_cloudy', tempHigh: 12, tempLow: 4 },
   '2026-03-05': { type: 'sunny', tempHigh: 18, tempLow: 6 },
   '2026-03-06': { type: 'partly_cloudy', tempHigh: 16, tempLow: 5 },
   '2026-03-07': { type: 'rainy', tempHigh: 12, tempLow: 4 },
@@ -33,6 +38,13 @@ const MOCK_WEATHER: Record<string, WeatherInfo> = {
   '2026-03-11': { type: 'drizzle', tempHigh: 13, tempLow: 6 },
   '2026-03-12': { type: 'sunny', tempHigh: 21, tempLow: 9 },
   '2026-03-13': { type: 'cloudy', tempHigh: 15, tempLow: 7 },
+  '2026-03-14': { type: 'thunderstorm', tempHigh: 14, tempLow: 8 },
+  '2026-03-15': { type: 'rainy', tempHigh: 11, tempLow: 5 },
+  '2026-03-16': { type: 'partly_cloudy', tempHigh: 16, tempLow: 6 },
+  '2026-03-17': { type: 'sunny', tempHigh: 19, tempLow: 8 },
+  '2026-03-18': { type: 'sunny', tempHigh: 22, tempLow: 10 },
+  '2026-03-19': { type: 'cloudy', tempHigh: 17, tempLow: 9 },
+  '2026-03-20': { type: 'drizzle', tempHigh: 14, tempLow: 7 },
 };
 
 interface CurveDateInfo {
@@ -60,7 +72,11 @@ const STATUS_DOT_LABEL: Record<CurveStatus, string> = {
   failed: '失败',
 };
 
+type CalendarViewMode = 'status' | 'weather';
+
 export default function DateSidebar({ currentDate, availableDates, onDateChange, disabled }: Props) {
+  const [calendarView, setCalendarView] = useState<CalendarViewMode>('status');
+
   const dateMap = useMemo(() => {
     const map = new Map<string, CurveDateInfo>();
     availableDates.forEach(d => map.set(d.date, d));
@@ -101,36 +117,67 @@ export default function DateSidebar({ currentDate, availableDates, onDateChange,
     }
   };
 
-  // Current date weather
-  const currentWeather = MOCK_WEATHER[currentDate];
-
   return (
     <div className="rounded-lg border border-panel-border bg-card p-4 space-y-3">
-      {/* Header with weather */}
+      {/* Header with view toggle */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">曲线日历</h3>
-        {currentWeather && (() => {
-          const cfg = WEATHER_CONFIG[currentWeather.type];
-          const Icon = cfg.icon;
-          return (
-            <div className="flex items-center gap-1.5 text-xs">
-              <Icon className={cn("h-4 w-4", cfg.color)} />
-              <span className="text-muted-foreground">{cfg.label}</span>
-              <span className="text-foreground font-medium">{currentWeather.tempLow}°~{currentWeather.tempHigh}°</span>
-            </div>
-          );
-        })()}
+        <div className="flex items-center rounded-md border border-input bg-muted p-0.5 gap-0.5">
+          <button
+            onClick={() => setCalendarView('status')}
+            className={cn(
+              "px-2 py-0.5 rounded text-xs transition-colors",
+              calendarView === 'status'
+                ? "bg-background text-foreground shadow-sm font-medium"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <span className="flex items-center gap-1">
+              <Send className="h-3 w-3" />
+              下发
+            </span>
+          </button>
+          <button
+            onClick={() => setCalendarView('weather')}
+            className={cn(
+              "px-2 py-0.5 rounded text-xs transition-colors",
+              calendarView === 'weather'
+                ? "bg-background text-foreground shadow-sm font-medium"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <span className="flex items-center gap-1">
+              <Sun className="h-3 w-3" />
+              天气
+            </span>
+          </button>
+        </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-        {(['sent', 'pending', 'failed'] as CurveStatus[]).map(s => (
-          <span key={s} className="flex items-center gap-1">
-            <span className={cn("inline-block w-2 h-2 rounded-full", STATUS_DOT_COLOR[s])} />
-            {STATUS_DOT_LABEL[s]}
-          </span>
-        ))}
-      </div>
+      {/* Legend - contextual */}
+      {calendarView === 'status' ? (
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {(['sent', 'pending', 'failed'] as CurveStatus[]).map(s => (
+            <span key={s} className="flex items-center gap-1">
+              <span className={cn("inline-block w-2 h-2 rounded-full", STATUS_DOT_COLOR[s])} />
+              {STATUS_DOT_LABEL[s]}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+          {(['sunny', 'partly_cloudy', 'cloudy', 'rainy', 'drizzle'] as WeatherType[]).map(w => {
+            const cfg = WEATHER_CONFIG[w];
+            const Icon = cfg.icon;
+            return (
+              <span key={w} className="flex items-center gap-0.5">
+                <Icon className={cn("h-3 w-3", cfg.color)} />
+                {cfg.label}
+              </span>
+            );
+          })}
+        </div>
+      )}
 
       <Calendar
         mode="single"
@@ -167,56 +214,25 @@ export default function DateSidebar({ currentDate, availableDates, onDateChange,
             const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
             const info = dateMap.get(dateStr);
             const weather = MOCK_WEATHER[dateStr];
-            const weatherCfg = weather ? WEATHER_CONFIG[weather.type] : null;
-            const WeatherIcon = weatherCfg?.icon;
+
             return (
               <div className="relative flex flex-col items-center leading-none gap-0.5">
                 <span className="text-xs">{date.getDate()}</span>
                 <div className="flex items-center h-2.5">
-                  {WeatherIcon && (
-                    <WeatherIcon className={cn("h-2.5 w-2.5", weatherCfg!.color)} />
+                  {calendarView === 'status' && info && (
+                    <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT_COLOR[info.status])} />
                   )}
-                  {!WeatherIcon && info && (
-                    <span className={cn(
-                      "w-1 h-1 rounded-full",
-                      STATUS_DOT_COLOR[info.status]
-                    )} />
-                  )}
+                  {calendarView === 'weather' && weather && (() => {
+                    const cfg = WEATHER_CONFIG[weather.type];
+                    const Icon = cfg.icon;
+                    return <Icon className={cn("h-2.5 w-2.5", cfg.color)} />;
+                  })()}
                 </div>
               </div>
             );
           },
         }}
       />
-
-      {/* Weekly forecast strip for upcoming days */}
-      <div className="border-t border-panel-border pt-3">
-        <p className="text-xs text-muted-foreground mb-2">近期天气</p>
-        <div className="grid grid-cols-5 gap-1">
-          {Object.entries(MOCK_WEATHER)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .slice(-5)
-            .map(([date, w]) => {
-              const cfg = WEATHER_CONFIG[w.type];
-              const Icon = cfg.icon;
-              const day = date.split('-')[2];
-              const isSelected = date === currentDate;
-              return (
-                <div
-                  key={date}
-                  className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-md py-1.5 text-xs",
-                    isSelected ? "bg-accent" : "hover:bg-accent/50"
-                  )}
-                >
-                  <span className="text-muted-foreground">{parseInt(day)}日</span>
-                  <Icon className={cn("h-3.5 w-3.5", cfg.color)} />
-                  <span className="text-[10px] text-muted-foreground">{w.tempLow}°~{w.tempHigh}°</span>
-                </div>
-              );
-            })}
-        </div>
-      </div>
     </div>
   );
 }
