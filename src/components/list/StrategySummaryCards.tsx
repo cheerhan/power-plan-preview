@@ -25,38 +25,75 @@ const ICONS: Record<CurveTypeKey, React.ReactNode> = {
   load: <Zap className="h-5 w-5" />,
 };
 
+const DESCRIPTIONS: Record<CurveTypeKey, string> = {
+  storage: '储能系统每日各时段的充电、放电或禁止动作计划，下发到现场控制器后作为次日实际运行依据。',
+  pv: '基于气象与历史数据生成的光伏发电功率预测曲线，为调度决策和电网申报提供参考。',
+  load: '根据用电负荷特征生成的次日负荷预测曲线，用于优化储能充放电策略与需量管理。',
+};
+
 export function StrategySummaryCards({ stats, activeType, onToggle }: Props) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {stats.map(s => {
         const isActive = activeType === s.type;
+        const total = s.success + s.failed + s.pending;
         return (
           <button
             key={s.type}
             onClick={() => onToggle(s.type)}
             className={cn(
-              'rounded-lg border border-panel-border bg-card p-4 text-left transition-all hover:shadow-md',
+              'rounded-lg border border-panel-border bg-card p-5 text-left transition-all hover:shadow-md',
               isActive && 'ring-2 ring-primary shadow-md'
             )}
           >
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-muted-foreground">{ICONS[s.type]}</span>
-              <span className="font-semibold text-foreground">{s.label}</span>
+            {/* Header */}
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className={cn(
+                'flex items-center justify-center w-8 h-8 rounded-md',
+                s.type === 'storage' && 'bg-status-pending/15 text-status-pending',
+                s.type === 'pv' && 'bg-chart-pv/15 text-chart-pv',
+                s.type === 'load' && 'bg-status-warning/15 text-status-warning',
+              )}>
+                {ICONS[s.type]}
+              </div>
+              <div>
+                <span className="font-semibold text-sm text-foreground">{s.label}</span>
+                <span className="ml-2 text-xs text-muted-foreground">{s.projectCount} 个项目</span>
+              </div>
             </div>
-            <div className="text-xs text-muted-foreground mb-1">
-              适用项目：<span className="text-foreground font-medium">{s.projectCount}</span>
-            </div>
+
+            {/* Description */}
+            <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+              {DESCRIPTIONS[s.type]}
+            </p>
+
+            {/* Stats bar */}
+            {total > 0 && (
+              <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden flex mb-2">
+                {s.success > 0 && (
+                  <div className="h-full bg-status-success" style={{ width: `${(s.success / total) * 100}%` }} />
+                )}
+                {s.failed > 0 && (
+                  <div className="h-full bg-destructive" style={{ width: `${(s.failed / total) * 100}%` }} />
+                )}
+                {s.pending > 0 && (
+                  <div className="h-full bg-status-pending" style={{ width: `${(s.pending / total) * 100}%` }} />
+                )}
+              </div>
+            )}
+
+            {/* Stats numbers */}
             <div className="flex gap-4 text-xs">
-              <span>
-                <span className="inline-block w-2 h-2 rounded-full bg-status-success mr-1" />
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-status-success" />
                 成功 <span className="font-medium text-foreground">{s.success}</span>
               </span>
-              <span>
-                <span className="inline-block w-2 h-2 rounded-full bg-destructive mr-1" />
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-destructive" />
                 失败 <span className="font-medium text-foreground">{s.failed}</span>
               </span>
-              <span>
-                <span className="inline-block w-2 h-2 rounded-full bg-status-pending mr-1" />
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-status-pending" />
                 待下发 <span className="font-medium text-foreground">{s.pending}</span>
               </span>
             </div>
