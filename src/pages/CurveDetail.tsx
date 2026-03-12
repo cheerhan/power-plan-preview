@@ -220,7 +220,7 @@ const CurveDetail = () => {
               {data.hasPv && (
                 <div>
                   <h3 className="text-sm font-semibold text-foreground mb-2">光伏预测功率</h3>
-                  <PvChart showActual={showActual} chartHeight={chartHeight} />
+                  <PvChart showActual={showActual} chartHeight={chartHeight} curveDate={data.curveDate} />
                 </div>
               )}
 
