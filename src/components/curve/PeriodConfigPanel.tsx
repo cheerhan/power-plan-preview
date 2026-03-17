@@ -1,8 +1,11 @@
-import { Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Trash2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { TimePeriod, ActionType, ACTION_LABELS, TIME_OPTIONS } from '@/types/curve';
+import { cn } from '@/lib/utils';
 
 interface Props {
   periods: TimePeriod[];
@@ -35,32 +38,37 @@ const PeriodConfigPanel = ({ periods, onChange, disabled }: Props) => {
     onChange(periods.filter(p => p.id !== id));
   };
 
-  // Readonly: show summary table
+  // Readonly: collapsible summary
   if (disabled) {
     return (
-      <div className="space-y-3">
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">储能充放电计划</h3>
-          <p className="text-xs text-muted-foreground leading-relaxed mt-1">展示储能系统每天各时段的充电、放电或禁止动作计划（由运营人员配置），下发到现场控制器后即作为次日实际运行的依据。</p>
-        </div>
-        <div className="space-y-1.5">
-          {periods.map(p => (
-            <div key={p.id} className="flex items-center gap-3 rounded-md border border-panel-border bg-panel-bg px-3 py-2 text-xs">
-              <span className="font-medium w-[130px]">{p.startTime} – {p.endTime}</span>
-              <span className={`px-2 py-0.5 rounded-sm ${
-                p.actionType === 'charge' ? 'bg-chart-charge text-foreground' :
-                p.actionType === 'discharge' ? 'bg-chart-discharge text-foreground' :
-                'bg-muted text-muted-foreground'
-              }`}>
-                {ACTION_LABELS[p.actionType]}
-              </span>
-              {p.actionType !== 'idle' && (
-                <span className="text-muted-foreground">{p.powerLimit} kW</span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      <Collapsible defaultOpen={false}>
+        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border border-panel-border bg-panel-bg px-3 py-2 hover:bg-accent/50 transition-colors">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-foreground">储能充放电计划</h3>
+            <span className="text-xs text-muted-foreground">{periods.length} 个时段</span>
+          </div>
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="space-y-1.5 pt-2">
+            {periods.map(p => (
+              <div key={p.id} className="flex items-center gap-3 rounded-md border border-panel-border bg-panel-bg px-3 py-2 text-xs">
+                <span className="font-medium w-[130px]">{p.startTime} – {p.endTime}</span>
+                <span className={`px-2 py-0.5 rounded-sm ${
+                  p.actionType === 'charge' ? 'bg-chart-charge text-foreground' :
+                  p.actionType === 'discharge' ? 'bg-chart-discharge text-foreground' :
+                  'bg-muted text-muted-foreground'
+                }`}>
+                  {ACTION_LABELS[p.actionType]}
+                </span>
+                {p.actionType !== 'idle' && (
+                  <span className="text-muted-foreground">{p.powerLimit} kW</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     );
   }
 
