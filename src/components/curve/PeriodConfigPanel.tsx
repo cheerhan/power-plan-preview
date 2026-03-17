@@ -1,8 +1,11 @@
-import { Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Trash2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { TimePeriod, ActionType, ACTION_LABELS, TIME_OPTIONS } from '@/types/curve';
+import { cn } from '@/lib/utils';
 
 interface Props {
   periods: TimePeriod[];
