@@ -10,6 +10,17 @@ export interface TimePeriod {
   powerLimit: number; // kW, 0 for idle
 }
 
+export interface ProjectParams {
+  projectType: ProjectType;
+  region: string;
+  stationCode: string;
+  storageRatedPower: number;   // kW
+  storageRatedCapacity: number; // kWh
+  pvInstalledCapacity?: number; // kWp
+  adjustableLoadCapacity?: number; // kW
+  nonAdjustableLoadScale?: number; // kW
+}
+
 export interface CurveDetail {
   id: string;
   projectName: string;
@@ -19,8 +30,11 @@ export interface CurveDetail {
   lastSentAt: string | null;
   operator: string | null;
   hasPv: boolean;
-  hasLoad: boolean;
+  hasAdjustableLoad: boolean;
+  hasNonAdjustableLoad: boolean;
   periods: TimePeriod[];
+  adjustableLoadPeriods?: TimePeriod[];
+  projectParams: ProjectParams;
 }
 
 export interface ChartPoint {
