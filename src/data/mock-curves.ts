@@ -16,6 +16,32 @@ const PARAMS_C = {
 };
 
 export const MOCK_CURVE_DB: Record<string, CurveDetail> = {
+  // C: 光储荷 - 明日 (pending, editable)
+  '12': {
+    id: '12', projectName: '朝6-605站', projectType: 'C',
+    curveDate: '2026-03-18', status: 'pending', lastSentAt: null, operator: null,
+    hasPv: true, hasAdjustableLoad: true, hasNonAdjustableLoad: true,
+    pvPredictionStatus: 'generated',
+    nonAdjLoadPredictionStatus: 'generated',
+    projectParams: PARAMS_C,
+    periods: [
+      { id: '1', startTime: '00:00', endTime: '06:00', actionType: 'charge', powerLimit: 100 },
+      { id: '2', startTime: '06:00', endTime: '09:00', actionType: 'idle', powerLimit: 0 },
+      { id: '3', startTime: '09:00', endTime: '12:00', actionType: 'discharge', powerLimit: 85 },
+      { id: '4', startTime: '12:00', endTime: '14:00', actionType: 'charge', powerLimit: 40 },
+      { id: '5', startTime: '14:00', endTime: '18:00', actionType: 'discharge', powerLimit: 95 },
+      { id: '6', startTime: '18:00', endTime: '22:00', actionType: 'charge', powerLimit: 60 },
+      { id: '7', startTime: '22:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 },
+    ],
+    adjustableLoadPeriods: [
+      { id: 'al1', startTime: '00:00', endTime: '08:00', actionType: 'idle', powerLimit: 0 },
+      { id: 'al2', startTime: '08:00', endTime: '11:00', actionType: 'charge', powerLimit: 55 },
+      { id: 'al3', startTime: '11:00', endTime: '14:00', actionType: 'discharge', powerLimit: 75 },
+      { id: 'al4', startTime: '14:00', endTime: '17:00', actionType: 'charge', powerLimit: 45 },
+      { id: 'al5', startTime: '17:00', endTime: '21:00', actionType: 'discharge', powerLimit: 65 },
+      { id: 'al6', startTime: '21:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 },
+    ],
+  },
   // A: 纯储能 - 2026-03-10 (pending)
   '1': {
     id: '1', projectName: '纯储能测试站', projectType: 'A',
