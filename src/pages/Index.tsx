@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Download, Plus, Filter } from 'lucide-react';
 import { useState, useMemo, useCallback } from 'react';
 import { CurveStatus, ProjectType } from '@/types/curve';
@@ -20,8 +21,9 @@ interface CurveRecord {
   curveDate: string;
   storageStatus: CurveStatus | null;
   pvStatus: CurveStatus | null;
-  loadStatus: CurveStatus | null;
-  lastSentAt: string | null;
+  adjustableLoadStatus: CurveStatus | null;
+  nonAdjustableLoadStatus: CurveStatus | null;
+  lastSentOrGeneratedAt: string | null;
   operator: string | null;
 }
 
@@ -30,7 +32,8 @@ interface ProjectInfo {
   type: ProjectType;
   hasStorage: boolean;
   hasPv: boolean;
-  hasLoad: boolean;
+  hasAdjustableLoad: boolean;
+  hasNonAdjustableLoad: boolean;
 }
 
 const STATUS_BADGE: Record<CurveStatus, { label: string; className: string }> = {
@@ -40,23 +43,23 @@ const STATUS_BADGE: Record<CurveStatus, { label: string; className: string }> = 
 };
 
 const MOCK_RECORDS: CurveRecord[] = [
-  { id: '1', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-10', storageStatus: 'pending', pvStatus: null, loadStatus: null, lastSentAt: null, operator: null },
-  { id: '2', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-09', storageStatus: 'sent', pvStatus: null, loadStatus: null, lastSentAt: '2026-03-08 08:00:00', operator: '王工' },
-  { id: '3', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-07', storageStatus: 'sent', pvStatus: null, loadStatus: null, lastSentAt: '2026-03-06 08:00:00', operator: '系统' },
-  { id: '4', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-10', storageStatus: 'pending', pvStatus: 'pending', loadStatus: null, lastSentAt: null, operator: null },
-  { id: '5', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-09', storageStatus: 'sent', pvStatus: 'sent', loadStatus: null, lastSentAt: '2026-03-08 08:30:00', operator: '张工' },
-  { id: '6', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-08', storageStatus: 'sent', pvStatus: 'sent', loadStatus: null, lastSentAt: '2026-03-07 08:00:00', operator: '系统' },
-  { id: '7', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-06', storageStatus: 'failed', pvStatus: 'failed', loadStatus: null, lastSentAt: '2026-03-05 08:00:00', operator: '系统' },
-  { id: '8', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-10', storageStatus: 'pending', pvStatus: 'pending', loadStatus: 'pending', lastSentAt: null, operator: null },
-  { id: '9', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-09', storageStatus: 'sent', pvStatus: 'sent', loadStatus: 'sent', lastSentAt: '2026-03-08 09:15:00', operator: '李工' },
-  { id: '10', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-07', storageStatus: 'failed', pvStatus: 'failed', loadStatus: 'failed', lastSentAt: '2026-03-06 09:15:00', operator: '李工' },
-  { id: '11', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-05', storageStatus: 'sent', pvStatus: 'sent', loadStatus: 'sent', lastSentAt: '2026-03-04 08:00:00', operator: '系统' },
+  { id: '1', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-10', storageStatus: 'pending', pvStatus: null, adjustableLoadStatus: null, nonAdjustableLoadStatus: null, lastSentOrGeneratedAt: null, operator: null },
+  { id: '2', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-09', storageStatus: 'sent', pvStatus: null, adjustableLoadStatus: null, nonAdjustableLoadStatus: null, lastSentOrGeneratedAt: '2026-03-08 08:00:00', operator: '王工' },
+  { id: '3', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-07', storageStatus: 'sent', pvStatus: null, adjustableLoadStatus: null, nonAdjustableLoadStatus: null, lastSentOrGeneratedAt: '2026-03-06 08:00:00', operator: '系统' },
+  { id: '4', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-10', storageStatus: 'pending', pvStatus: 'pending', adjustableLoadStatus: null, nonAdjustableLoadStatus: null, lastSentOrGeneratedAt: null, operator: null },
+  { id: '5', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-09', storageStatus: 'sent', pvStatus: 'sent', adjustableLoadStatus: null, nonAdjustableLoadStatus: null, lastSentOrGeneratedAt: '2026-03-08 08:30:00', operator: '张工' },
+  { id: '6', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-08', storageStatus: 'sent', pvStatus: 'sent', adjustableLoadStatus: null, nonAdjustableLoadStatus: null, lastSentOrGeneratedAt: '2026-03-07 08:00:00', operator: '系统' },
+  { id: '7', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-06', storageStatus: 'failed', pvStatus: 'failed', adjustableLoadStatus: null, nonAdjustableLoadStatus: null, lastSentOrGeneratedAt: '2026-03-05 08:00:00', operator: '系统' },
+  { id: '8', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-10', storageStatus: 'pending', pvStatus: 'pending', adjustableLoadStatus: 'pending', nonAdjustableLoadStatus: 'sent', lastSentOrGeneratedAt: '2026-03-09 20:00:00', operator: '系统' },
+  { id: '9', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-09', storageStatus: 'sent', pvStatus: 'sent', adjustableLoadStatus: 'sent', nonAdjustableLoadStatus: 'sent', lastSentOrGeneratedAt: '2026-03-08 09:15:00', operator: '李工' },
+  { id: '10', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-07', storageStatus: 'failed', pvStatus: 'failed', adjustableLoadStatus: 'failed', nonAdjustableLoadStatus: 'sent', lastSentOrGeneratedAt: '2026-03-06 09:15:00', operator: '李工' },
+  { id: '11', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-05', storageStatus: 'sent', pvStatus: 'sent', adjustableLoadStatus: 'sent', nonAdjustableLoadStatus: 'sent', lastSentOrGeneratedAt: '2026-03-04 08:00:00', operator: '系统' },
 ];
 
 const ALL_PROJECTS: ProjectInfo[] = [
-  { name: '纯储能测试站', type: 'A', hasStorage: true, hasPv: false, hasLoad: false },
-  { name: '示范储能电站一期', type: 'B', hasStorage: true, hasPv: true, hasLoad: false },
-  { name: '朝6-605站', type: 'C', hasStorage: true, hasPv: true, hasLoad: true },
+  { name: '纯储能测试站', type: 'A', hasStorage: true, hasPv: false, hasAdjustableLoad: false, hasNonAdjustableLoad: false },
+  { name: '示范储能电站一期', type: 'B', hasStorage: true, hasPv: true, hasAdjustableLoad: false, hasNonAdjustableLoad: false },
+  { name: '朝6-605站', type: 'C', hasStorage: true, hasPv: true, hasAdjustableLoad: true, hasNonAdjustableLoad: true },
 ];
 
 function StatusCell({ status }: { status: CurveStatus | null }) {
@@ -68,14 +71,16 @@ function StatusCell({ status }: { status: CurveStatus | null }) {
 const CURVE_TYPE_LABELS: Record<string, string> = {
   storage: '储能计划',
   pv: '光伏预测',
-  load: '负荷计划',
+  adjustableLoad: '可调负荷计划',
+  nonAdjustableLoad: '不可调负荷预测',
 };
 
 function CurveTypeTags({ project }: { project: ProjectInfo }) {
   const types: string[] = [];
   if (project.hasStorage) types.push('storage');
   if (project.hasPv) types.push('pv');
-  if (project.hasLoad) types.push('load');
+  if (project.hasAdjustableLoad) types.push('adjustableLoad');
+  if (project.hasNonAdjustableLoad) types.push('nonAdjustableLoad');
   return (
     <div className="flex flex-wrap gap-1">
       {types.map(t => (
@@ -119,23 +124,23 @@ const Index = () => {
     setAutoDispatchMap(prev => ({ ...prev, [projectName]: !prev[projectName] }));
   }, []);
 
-  // Compute strategy stats
   const strategyStats = useMemo((): StrategyStats[] => {
     const projectsWithStorage = ALL_PROJECTS.filter(p => p.hasStorage).length;
     const projectsWithPv = ALL_PROJECTS.filter(p => p.hasPv).length;
-    const projectsWithLoad = ALL_PROJECTS.filter(p => p.hasLoad).length;
+    const projectsWithAdjLoad = ALL_PROJECTS.filter(p => p.hasAdjustableLoad).length;
+    const projectsWithNonAdjLoad = ALL_PROJECTS.filter(p => p.hasNonAdjustableLoad).length;
 
-    const count = (field: 'storageStatus' | 'pvStatus' | 'loadStatus', status: CurveStatus) =>
+    const count = (field: keyof CurveRecord, status: CurveStatus) =>
       MOCK_RECORDS.filter(r => r[field] === status).length;
 
     return [
       { type: 'storage', label: '储能计划', icon: null, projectCount: projectsWithStorage, success: count('storageStatus', 'sent'), failed: count('storageStatus', 'failed'), pending: count('storageStatus', 'pending') },
       { type: 'pv', label: '光伏预测', icon: null, projectCount: projectsWithPv, success: count('pvStatus', 'sent'), failed: count('pvStatus', 'failed'), pending: count('pvStatus', 'pending') },
-      { type: 'load', label: '负荷计划', icon: null, projectCount: projectsWithLoad, success: count('loadStatus', 'sent'), failed: count('loadStatus', 'failed'), pending: count('loadStatus', 'pending') },
+      { type: 'adjustableLoad', label: '可调负荷计划', icon: null, projectCount: projectsWithAdjLoad, success: count('adjustableLoadStatus', 'sent'), failed: count('adjustableLoadStatus', 'failed'), pending: count('adjustableLoadStatus', 'pending') },
+      { type: 'nonAdjustableLoad', label: '不可调负荷预测', icon: null, projectCount: projectsWithNonAdjLoad, success: count('nonAdjustableLoadStatus', 'sent'), failed: count('nonAdjustableLoadStatus', 'failed'), pending: count('nonAdjustableLoadStatus', 'pending') },
     ];
   }, []);
 
-  // Build per-project rows with latest curve
   const projectRows = useMemo((): ProjectRow[] => {
     return ALL_PROJECTS
       .filter(p => selectedProjects.length === 0 || selectedProjects.includes(p.name))
@@ -143,7 +148,8 @@ const Index = () => {
         if (!activeStrategyType) return true;
         if (activeStrategyType === 'storage') return p.hasStorage;
         if (activeStrategyType === 'pv') return p.hasPv;
-        if (activeStrategyType === 'load') return p.hasLoad;
+        if (activeStrategyType === 'adjustableLoad') return p.hasAdjustableLoad;
+        if (activeStrategyType === 'nonAdjustableLoad') return p.hasNonAdjustableLoad;
         return true;
       })
       .map(project => {
@@ -179,6 +185,13 @@ const Index = () => {
     alert(`导出文件：调度曲线列表_${ts}.xlsx（演示）`);
   };
 
+  const STRATEGY_LABELS: Record<CurveTypeKey, string> = {
+    storage: '储能计划',
+    pv: '光伏预测',
+    adjustableLoad: '可调负荷计划',
+    nonAdjustableLoad: '不可调负荷预测',
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b border-panel-border px-6 py-4">
@@ -186,7 +199,6 @@ const Index = () => {
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Area 1: Strategy Summary Cards */}
         <StrategySummaryCards
           stats={strategyStats}
           activeType={activeStrategyType}
@@ -226,7 +238,7 @@ const Index = () => {
 
           {activeStrategyType && (
             <Badge variant="secondary" className="text-xs cursor-pointer" onClick={() => setActiveStrategyType(null)}>
-              {activeStrategyType === 'storage' ? '储能计划' : activeStrategyType === 'pv' ? '光伏预测' : '负荷计划'} ✕
+              {STRATEGY_LABELS[activeStrategyType]} ✕
             </Badge>
           )}
 
@@ -273,27 +285,33 @@ const Index = () => {
           </Dialog>
         </div>
 
-        {/* Area 2: Per-project table */}
+        {/* Per-project table */}
         <div className="rounded-md border border-panel-border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[140px]">项目名称</TableHead>
-                <TableHead className="w-[180px]">曲线类型</TableHead>
-                <TableHead className="w-[120px]">最近曲线日期</TableHead>
-                <TableHead className="w-[90px]">储能计划</TableHead>
-                <TableHead className="w-[90px]">光伏预测</TableHead>
-                <TableHead className="w-[90px]">负荷计划</TableHead>
-                <TableHead className="w-[160px]">最近下发时间</TableHead>
-                <TableHead className="w-[80px]">操作人</TableHead>
-                <TableHead className="w-[90px]">自动下发</TableHead>
-                <TableHead className="w-[80px]">操作</TableHead>
+                <TableHead className="w-[130px]">项目名称</TableHead>
+                <TableHead className="w-[200px]">曲线类型</TableHead>
+                <TableHead className="w-[110px]">最近曲线日期</TableHead>
+                <TableHead className="w-[80px]">储能计划</TableHead>
+                <TableHead className="w-[80px]">光伏预测</TableHead>
+                <TableHead className="w-[95px]">可调负荷计划</TableHead>
+                <TableHead className="w-[100px]">不可调负荷预测</TableHead>
+                <TableHead className="w-[145px]">最近下发/生成时间</TableHead>
+                <TableHead className="w-[70px]">操作人</TableHead>
+                <TableHead className="w-[90px]">
+                  <Tooltip>
+                    <TooltipTrigger className="cursor-help underline decoration-dotted decoration-muted-foreground">自动下发</TooltipTrigger>
+                    <TooltipContent className="max-w-[200px] text-xs">仅针对最新可执行曲线（储能计划、可调负荷计划）自动下发</TooltipContent>
+                  </Tooltip>
+                </TableHead>
+                <TableHead className="w-[70px]">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {projectRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                     暂无数据
                   </TableCell>
                 </TableRow>
@@ -304,9 +322,10 @@ const Index = () => {
                     <TableCell><CurveTypeTags project={project} /></TableCell>
                     <TableCell>{latestRecord?.curveDate ?? '—'}</TableCell>
                     <TableCell><StatusCell status={latestRecord?.storageStatus ?? null} /></TableCell>
-                    <TableCell><StatusCell status={latestRecord?.pvStatus ?? null} /></TableCell>
-                    <TableCell><StatusCell status={latestRecord?.loadStatus ?? null} /></TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{latestRecord?.lastSentAt ?? '—'}</TableCell>
+                    <TableCell><StatusCell status={project.hasPv ? (latestRecord?.pvStatus ?? null) : null} /></TableCell>
+                    <TableCell><StatusCell status={project.hasAdjustableLoad ? (latestRecord?.adjustableLoadStatus ?? null) : null} /></TableCell>
+                    <TableCell><StatusCell status={project.hasNonAdjustableLoad ? (latestRecord?.nonAdjustableLoadStatus ?? null) : null} /></TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{latestRecord?.lastSentOrGeneratedAt ?? '—'}</TableCell>
                     <TableCell>{latestRecord?.operator ?? '—'}</TableCell>
                     <TableCell>
                       <Switch

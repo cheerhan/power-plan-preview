@@ -74,20 +74,35 @@ export function generateMockPvData(): ChartPoint[] {
   return points;
 }
 
-export function generateMockLoadData(): ChartPoint[] {
+/** Adjustable load: has plan (from periods) + actual (simulated tracking) */
+export function generateMockAdjustableLoadData(periods: TimePeriod[]): ChartPoint[] {
+  const planData = periodsToChartData(periods);
+  return planData.map(p => ({
+    ...p,
+    actual: p.plan !== null ? p.plan * (0.85 + Math.random() * 0.3) : null,
+  }));
+}
+
+/** Non-adjustable load: predict + actual, no plan control */
+export function generateMockNonAdjustableLoadData(): ChartPoint[] {
   const points: ChartPoint[] = [];
   for (let i = 0; i < 96; i++) {
     const h = Math.floor(i / 4);
     const m = (i % 4) * 15;
     const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     const hour = h + m / 60;
-    // Simulate industrial load pattern with peaks at 9-11 and 14-16
+    // Industrial load pattern
     const base = 40;
     const morning = 60 * Math.exp(-0.5 * ((hour - 10) / 1.5) ** 2);
     const afternoon = 50 * Math.exp(-0.5 * ((hour - 15) / 1.5) ** 2);
     const night = -20 * Math.exp(-0.5 * ((hour - 3) / 2) ** 2);
-    const actual = Math.max(0, base + morning + afternoon + night + (Math.random() - 0.5) * 10);
-    points.push({ time, plan: null, actual: Math.round(actual * 10) / 10 });
+    const predict = Math.max(0, base + morning + afternoon + night);
+    const actual = predict * (0.85 + Math.random() * 0.3) + (Math.random() - 0.5) * 8;
+    points.push({
+      time,
+      plan: Math.round(predict * 10) / 10,
+      actual: Math.round(Math.max(0, actual) * 10) / 10,
+    });
   }
   return points;
 }
@@ -107,7 +122,6 @@ export function isCurveExecuted(curveDate: string): boolean {
   today.setHours(0, 0, 0, 0);
   const d = new Date(curveDate);
   d.setHours(0, 0, 0, 0);
-  // Executed if date is in the past, or if it's today (execution day has arrived)
   return d.getTime() <= today.getTime();
 }
 
