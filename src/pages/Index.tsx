@@ -49,6 +49,7 @@ const PREDICTION_STATUS_BADGE: Record<PredictionStatus, { label: string; classNa
 };
 
 const MOCK_RECORDS: CurveRecord[] = [
+  { id: '12', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-18', storageStatus: 'pending', pvPredictionStatus: 'generated', adjustableLoadStatus: 'pending', nonAdjLoadPredictionStatus: 'generated', lastSentOrGeneratedAt: null, operator: null },
   { id: '1', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-10', storageStatus: 'pending', pvPredictionStatus: null, adjustableLoadStatus: null, nonAdjLoadPredictionStatus: null, lastSentOrGeneratedAt: null, operator: null },
   { id: '2', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-09', storageStatus: 'sent', pvPredictionStatus: null, adjustableLoadStatus: null, nonAdjLoadPredictionStatus: null, lastSentOrGeneratedAt: '2026-03-08 08:00:00', operator: '王工' },
   { id: '3', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-07', storageStatus: 'sent', pvPredictionStatus: null, adjustableLoadStatus: null, nonAdjLoadPredictionStatus: null, lastSentOrGeneratedAt: '2026-03-06 08:00:00', operator: '系统' },
