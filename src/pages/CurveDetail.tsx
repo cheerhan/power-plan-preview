@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { BarChart3, TableIcon, Zap, Sun, Plug, Activity } from 'lucide-react';
+import { BarChart3, TableIcon, Zap, Sun, Plug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -9,13 +9,12 @@ import DetailHeader from '@/components/curve/DetailHeader';
 import PeriodConfigPanel from '@/components/curve/PeriodConfigPanel';
 import EnergyStorageChart from '@/components/curve/EnergyStorageChart';
 import PvChart from '@/components/curve/PvChart';
-import AdjustableLoadChart from '@/components/curve/AdjustableLoadChart';
-import NonAdjustableLoadChart from '@/components/curve/NonAdjustableLoadChart';
+import LoadCombinedChart from '@/components/curve/LoadCombinedChart';
 import CurveDataTable from '@/components/curve/CurveDataTable';
 import ProjectParamsCard from '@/components/curve/ProjectParamsCard';
 import DispatchHistory from '@/components/curve/DispatchHistory';
 import DateSidebar from '@/components/curve/DateSidebar';
-import { TimePeriod, CurveDetail as CurveDetailType, ProjectType, CurveStatus } from '@/types/curve';
+import { TimePeriod, CurveDetail as CurveDetailType, ProjectType } from '@/types/curve';
 import { validatePeriods, isCurveEditable, isCurveExecuted, getTomorrowDate } from '@/lib/curve-utils';
 import { MOCK_CURVE_DB } from '@/data/mock-curves';
 import { cn } from '@/lib/utils';
@@ -130,6 +129,7 @@ const CurveDetail = () => {
 
   const activeStoragePeriods = editing ? periods : savedPeriods;
   const activeAdjLoadPeriods = editing ? adjLoadPeriods : savedAdjLoadPeriods;
+  const hasLoad = data.hasAdjustableLoad || data.hasNonAdjustableLoad;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -153,8 +153,8 @@ const CurveDetail = () => {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar: calendar + project info */}
-        <div className="w-[320px] shrink-0 overflow-y-auto border-r border-panel-border p-4 space-y-4">
+        {/* Left sidebar */}
+        <div className="w-[300px] shrink-0 overflow-y-auto border-r border-panel-border p-3 space-y-3">
           <DateSidebar
             currentDate={data.curveDate}
             availableDates={availableDates}
@@ -166,14 +166,14 @@ const CurveDetail = () => {
 
         {/* Main content area */}
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-[1200px] mx-auto p-5 space-y-5">
+          <div className="max-w-[1200px] mx-auto px-4 py-3 space-y-3">
 
             {/* View mode toggle */}
             <div className="flex items-center justify-end gap-1">
               <Button
                 variant="ghost"
                 size="sm"
-                className={cn("h-8 gap-1.5 text-xs", viewMode === 'chart' && "bg-accent text-accent-foreground")}
+                className={cn("h-7 gap-1.5 text-xs", viewMode === 'chart' && "bg-accent text-accent-foreground")}
                 onClick={() => setViewMode('chart')}
               >
                 <BarChart3 className="h-3.5 w-3.5" />
@@ -182,7 +182,7 @@ const CurveDetail = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                className={cn("h-8 gap-1.5 text-xs", viewMode === 'table' && "bg-accent text-accent-foreground")}
+                className={cn("h-7 gap-1.5 text-xs", viewMode === 'table' && "bg-accent text-accent-foreground")}
                 onClick={() => setViewMode('table')}
               >
                 <TableIcon className="h-3.5 w-3.5" />
@@ -191,13 +191,13 @@ const CurveDetail = () => {
             </div>
 
             {viewMode === 'chart' ? (
-              <div className="space-y-5">
-                {/* ── Module 1: 储能计划充放电限值曲线 ── */}
+              <div className="space-y-3">
+                {/* ── 储能计划充放电限值曲线 ── */}
                 <Card className="border-panel-border shadow-sm">
-                  <CardHeader className="pb-3 px-5 pt-4">
+                  <CardHeader className="pb-2 px-4 pt-3">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-chart-discharge">
-                        <Zap className="h-4 w-4 text-foreground" />
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-chart-discharge">
+                        <Zap className="h-3.5 w-3.5 text-foreground" />
                       </div>
                       <div>
                         <CardTitle className="text-sm font-semibold">储能计划充放电限值曲线</CardTitle>
@@ -205,19 +205,22 @@ const CurveDetail = () => {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="px-5 pb-4 space-y-4">
+                  <CardContent className="px-4 pb-3 space-y-2">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      储能系统每日各时段的充电、放电或禁止动作计划，下发到现场控制器后作为次日实际运行依据。
+                    </p>
                     <PeriodConfigPanel periods={activeStoragePeriods} onChange={setPeriods} disabled={!editing} />
-                    <EnergyStorageChart periods={activeStoragePeriods} showActual={showActual} chartHeight={300} />
+                    <EnergyStorageChart periods={activeStoragePeriods} showActual={showActual} chartHeight={260} />
                   </CardContent>
                 </Card>
 
-                {/* ── Module 2: 光伏预测功率曲线 ── */}
+                {/* ── 光伏预测功率曲线 ── */}
                 {data.hasPv && (
                   <Card className="border-panel-border shadow-sm">
-                    <CardHeader className="pb-3 px-5 pt-4">
+                    <CardHeader className="pb-2 px-4 pt-3">
                       <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-chart-pv/20">
-                          <Sun className="h-4 w-4 text-chart-pv" />
+                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-chart-pv/20">
+                          <Sun className="h-3.5 w-3.5 text-chart-pv" />
                         </div>
                         <div>
                           <CardTitle className="text-sm font-semibold">光伏预测功率曲线</CardTitle>
@@ -225,48 +228,43 @@ const CurveDetail = () => {
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="px-5 pb-4">
-                      <PvChart showActual={showActual} chartHeight={280} curveDate={data.curveDate} />
+                    <CardContent className="px-4 pb-3">
+                      <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                        基于气象与历史数据生成的光伏发电功率预测曲线，为调度决策和电网申报提供参考。
+                      </p>
+                      <PvChart showActual={showActual} chartHeight={240} curveDate={data.curveDate} />
                     </CardContent>
                   </Card>
                 )}
 
-                {/* ── Module 3: 可调负荷计划曲线 ── */}
-                {data.hasAdjustableLoad && (
+                {/* ── 负荷曲线（汇总 / 可调 / 不可调 Tab） ── */}
+                {hasLoad && (
                   <Card className="border-panel-border shadow-sm">
-                    <CardHeader className="pb-3 px-5 pt-4">
+                    <CardHeader className="pb-2 px-4 pt-3">
                       <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-status-warning/20">
-                          <Plug className="h-4 w-4 text-status-warning" />
+                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-status-pending/20">
+                          <Plug className="h-3.5 w-3.5 text-status-pending" />
                         </div>
                         <div>
-                          <CardTitle className="text-sm font-semibold">可调负荷计划曲线</CardTitle>
-                          <p className="text-xs text-muted-foreground mt-0.5">可执行 · 参与下发</p>
+                          <CardTitle className="text-sm font-semibold">负荷曲线</CardTitle>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {data.hasAdjustableLoad && data.hasNonAdjustableLoad
+                              ? '可调计划（可执行） + 不可调预测（参考）'
+                              : data.hasAdjustableLoad
+                                ? '可调负荷计划 · 可执行'
+                                : '不可调负荷预测 · 参考数据'}
+                          </p>
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="px-5 pb-4">
-                      <AdjustableLoadChart periods={activeAdjLoadPeriods} showActual={showActual} chartHeight={280} />
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* ── Module 4: 不可调负荷预测曲线 ── */}
-                {data.hasNonAdjustableLoad && (
-                  <Card className="border-panel-border shadow-sm">
-                    <CardHeader className="pb-3 px-5 pt-4">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted">
-                          <Activity className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-sm font-semibold">不可调负荷预测曲线</CardTitle>
-                          <p className="text-xs text-muted-foreground mt-0.5">参考数据 · 不参与下发</p>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-5 pb-4">
-                      <NonAdjustableLoadChart chartHeight={280} />
+                    <CardContent className="px-4 pb-3">
+                      <LoadCombinedChart
+                        hasAdjustableLoad={data.hasAdjustableLoad}
+                        hasNonAdjustableLoad={data.hasNonAdjustableLoad}
+                        adjustableLoadPeriods={activeAdjLoadPeriods}
+                        showActual={showActual}
+                        chartHeight={240}
+                      />
                     </CardContent>
                   </Card>
                 )}
