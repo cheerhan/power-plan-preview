@@ -65,6 +65,7 @@ export const MOCK_CURVE_DB: Record<string, CurveDetail> = {
     id: '4', projectName: '示范储能电站一期', projectType: 'B',
     curveDate: '2026-03-10', status: 'pending', lastSentAt: null, operator: null,
     hasPv: true, hasAdjustableLoad: false, hasNonAdjustableLoad: false,
+    pvPredictionStatus: 'generated',
     projectParams: PARAMS_B,
     periods: [
       { id: '1', startTime: '00:00', endTime: '05:00', actionType: 'charge', powerLimit: 100 },
@@ -80,6 +81,7 @@ export const MOCK_CURVE_DB: Record<string, CurveDetail> = {
     id: '5', projectName: '示范储能电站一期', projectType: 'B',
     curveDate: '2026-03-09', status: 'sent', lastSentAt: '2026-03-08 08:30:00', operator: '张工',
     hasPv: true, hasAdjustableLoad: false, hasNonAdjustableLoad: false,
+    pvPredictionStatus: 'generated',
     projectParams: PARAMS_B,
     periods: [
       { id: '1', startTime: '00:00', endTime: '07:00', actionType: 'idle', powerLimit: 0 },
@@ -94,6 +96,7 @@ export const MOCK_CURVE_DB: Record<string, CurveDetail> = {
     id: '6', projectName: '示范储能电站一期', projectType: 'B',
     curveDate: '2026-03-08', status: 'sent', lastSentAt: '2026-03-07 08:00:00', operator: '系统',
     hasPv: true, hasAdjustableLoad: false, hasNonAdjustableLoad: false,
+    pvPredictionStatus: 'generated',
     projectParams: PARAMS_B,
     periods: [
       { id: '1', startTime: '00:00', endTime: '06:00', actionType: 'charge', powerLimit: 90 },
@@ -110,6 +113,7 @@ export const MOCK_CURVE_DB: Record<string, CurveDetail> = {
     id: '7', projectName: '示范储能电站一期', projectType: 'B',
     curveDate: '2026-03-06', status: 'failed', lastSentAt: '2026-03-05 08:00:00', operator: '系统',
     hasPv: true, hasAdjustableLoad: false, hasNonAdjustableLoad: false,
+    pvPredictionStatus: 'generation_failed',
     projectParams: PARAMS_B,
     periods: [
       { id: '1', startTime: '00:00', endTime: '07:00', actionType: 'charge', powerLimit: 100 },
@@ -122,6 +126,8 @@ export const MOCK_CURVE_DB: Record<string, CurveDetail> = {
     id: '8', projectName: '朝6-605站', projectType: 'C',
     curveDate: '2026-03-10', status: 'pending', lastSentAt: null, operator: null,
     hasPv: true, hasAdjustableLoad: true, hasNonAdjustableLoad: true,
+    pvPredictionStatus: 'generated',
+    nonAdjLoadPredictionStatus: 'generated',
     projectParams: PARAMS_C,
     periods: [
       { id: '1', startTime: '00:00', endTime: '06:00', actionType: 'charge', powerLimit: 110 },
@@ -146,6 +152,8 @@ export const MOCK_CURVE_DB: Record<string, CurveDetail> = {
     id: '9', projectName: '朝6-605站', projectType: 'C',
     curveDate: '2026-03-09', status: 'sent', lastSentAt: '2026-03-08 09:15:00', operator: '李工',
     hasPv: true, hasAdjustableLoad: true, hasNonAdjustableLoad: true,
+    pvPredictionStatus: 'generated',
+    nonAdjLoadPredictionStatus: 'generated',
     projectParams: PARAMS_C,
     periods: [
       { id: '1', startTime: '00:00', endTime: '07:00', actionType: 'charge', powerLimit: 100 },
@@ -169,6 +177,8 @@ export const MOCK_CURVE_DB: Record<string, CurveDetail> = {
     id: '10', projectName: '朝6-605站', projectType: 'C',
     curveDate: '2026-03-07', status: 'failed', lastSentAt: '2026-03-06 09:15:00', operator: '李工',
     hasPv: true, hasAdjustableLoad: true, hasNonAdjustableLoad: true,
+    pvPredictionStatus: 'generated',
+    nonAdjLoadPredictionStatus: 'generation_failed',
     projectParams: PARAMS_C,
     periods: [
       { id: '1', startTime: '00:00', endTime: '07:00', actionType: 'charge', powerLimit: 100 },
@@ -188,6 +198,8 @@ export const MOCK_CURVE_DB: Record<string, CurveDetail> = {
     id: '11', projectName: '朝6-605站', projectType: 'C',
     curveDate: '2026-03-05', status: 'sent', lastSentAt: '2026-03-04 08:00:00', operator: '系统',
     hasPv: true, hasAdjustableLoad: true, hasNonAdjustableLoad: true,
+    pvPredictionStatus: 'generated',
+    nonAdjLoadPredictionStatus: 'generated',
     projectParams: PARAMS_C,
     periods: [
       { id: '1', startTime: '00:00', endTime: '07:00', actionType: 'charge', powerLimit: 100 },

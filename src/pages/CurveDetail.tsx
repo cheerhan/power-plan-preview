@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { BarChart3, TableIcon, ChevronRight, Zap, Sun, Plug } from 'lucide-react';
+import { BarChart3, TableIcon, Zap, Sun, Plug, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -9,7 +9,8 @@ import DetailHeader from '@/components/curve/DetailHeader';
 import PeriodConfigPanel from '@/components/curve/PeriodConfigPanel';
 import EnergyStorageChart from '@/components/curve/EnergyStorageChart';
 import PvChart from '@/components/curve/PvChart';
-import LoadCombinedChart from '@/components/curve/LoadCombinedChart';
+import AdjustableLoadChart from '@/components/curve/AdjustableLoadChart';
+import NonAdjustableLoadChart from '@/components/curve/NonAdjustableLoadChart';
 import CurveDataTable from '@/components/curve/CurveDataTable';
 import ProjectParamsCard from '@/components/curve/ProjectParamsCard';
 import DispatchHistory from '@/components/curve/DispatchHistory';
@@ -31,6 +32,8 @@ function buildNewCurve(projectName: string, projectType: ProjectType): CurveDeta
     hasPv: projectType === 'B' || projectType === 'C',
     hasAdjustableLoad: projectType === 'C',
     hasNonAdjustableLoad: projectType === 'C',
+    pvPredictionStatus: (projectType === 'B' || projectType === 'C') ? 'none' : undefined,
+    nonAdjLoadPredictionStatus: projectType === 'C' ? 'none' : undefined,
     periods: [{ id: '1', startTime: '00:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 }],
     adjustableLoadPeriods: projectType === 'C' ? [{ id: 'al1', startTime: '00:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 }] : undefined,
     projectParams: {
@@ -127,7 +130,6 @@ const CurveDetail = () => {
 
   const activeStoragePeriods = editing ? periods : savedPeriods;
   const activeAdjLoadPeriods = editing ? adjLoadPeriods : savedAdjLoadPeriods;
-  const hasLoad = data.hasAdjustableLoad || data.hasNonAdjustableLoad;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -190,7 +192,7 @@ const CurveDetail = () => {
 
             {viewMode === 'chart' ? (
               <div className="space-y-5">
-                {/* ── Module 1: 储能计划 ── */}
+                {/* ── Module 1: 储能计划充放电限值曲线 ── */}
                 <Card className="border-panel-border shadow-sm">
                   <CardHeader className="pb-3 px-5 pt-4">
                     <div className="flex items-center gap-2">
@@ -204,14 +206,12 @@ const CurveDetail = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="px-5 pb-4 space-y-4">
-                    {/* Period config */}
                     <PeriodConfigPanel periods={activeStoragePeriods} onChange={setPeriods} disabled={!editing} />
-                    {/* Chart */}
                     <EnergyStorageChart periods={activeStoragePeriods} showActual={showActual} chartHeight={300} />
                   </CardContent>
                 </Card>
 
-                {/* ── Module 2: 光伏预测 ── */}
+                {/* ── Module 2: 光伏预测功率曲线 ── */}
                 {data.hasPv && (
                   <Card className="border-panel-border shadow-sm">
                     <CardHeader className="pb-3 px-5 pt-4">
@@ -231,34 +231,42 @@ const CurveDetail = () => {
                   </Card>
                 )}
 
-                {/* ── Module 3: 负荷曲线（合并） ── */}
-                {hasLoad && (
+                {/* ── Module 3: 可调负荷计划曲线 ── */}
+                {data.hasAdjustableLoad && (
                   <Card className="border-panel-border shadow-sm">
                     <CardHeader className="pb-3 px-5 pt-4">
                       <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-status-pending/20">
-                          <Plug className="h-4 w-4 text-status-pending" />
+                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-status-warning/20">
+                          <Plug className="h-4 w-4 text-status-warning" />
                         </div>
                         <div>
-                          <CardTitle className="text-sm font-semibold">负荷曲线</CardTitle>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {data.hasAdjustableLoad && data.hasNonAdjustableLoad
-                              ? '可调计划（可执行） + 不可调预测（参考）'
-                              : data.hasAdjustableLoad
-                                ? '可调负荷计划 · 可执行'
-                                : '不可调负荷预测 · 参考数据'}
-                          </p>
+                          <CardTitle className="text-sm font-semibold">可调负荷计划曲线</CardTitle>
+                          <p className="text-xs text-muted-foreground mt-0.5">可执行 · 参与下发</p>
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent className="px-5 pb-4">
-                      <LoadCombinedChart
-                        hasAdjustableLoad={data.hasAdjustableLoad}
-                        hasNonAdjustableLoad={data.hasNonAdjustableLoad}
-                        adjustableLoadPeriods={activeAdjLoadPeriods}
-                        showActual={showActual}
-                        chartHeight={280}
-                      />
+                      <AdjustableLoadChart periods={activeAdjLoadPeriods} showActual={showActual} chartHeight={280} />
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* ── Module 4: 不可调负荷预测曲线 ── */}
+                {data.hasNonAdjustableLoad && (
+                  <Card className="border-panel-border shadow-sm">
+                    <CardHeader className="pb-3 px-5 pt-4">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted">
+                          <Activity className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-sm font-semibold">不可调负荷预测曲线</CardTitle>
+                          <p className="text-xs text-muted-foreground mt-0.5">参考数据 · 不参与下发</p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="px-5 pb-4">
+                      <NonAdjustableLoadChart chartHeight={280} />
                     </CardContent>
                   </Card>
                 )}
