@@ -48,7 +48,14 @@ export const MOCK_CURVE_DB: Record<string, CurveDetail> = {
     id: '4', projectName: '示范储能电站一期', projectType: 'B',
     curveDate: '2026-03-10', status: 'pending', lastSentAt: null, operator: null,
     hasPv: true, hasLoad: false,
-    periods: [{ id: '1', startTime: '00:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 }],
+    periods: [
+      { id: '1', startTime: '00:00', endTime: '05:00', actionType: 'charge', powerLimit: 100 },
+      { id: '2', startTime: '05:00', endTime: '09:00', actionType: 'idle', powerLimit: 0 },
+      { id: '3', startTime: '09:00', endTime: '12:00', actionType: 'discharge', powerLimit: 70 },
+      { id: '4', startTime: '12:00', endTime: '15:00', actionType: 'charge', powerLimit: 50 },
+      { id: '5', startTime: '15:00', endTime: '19:00', actionType: 'discharge', powerLimit: 85 },
+      { id: '6', startTime: '19:00', endTime: '24:00', actionType: 'idle', powerLimit: 0 },
+    ],
   },
   // B: 光储 - today (sent)
   '5': {
