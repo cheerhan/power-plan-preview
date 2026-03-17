@@ -1,8 +1,11 @@
 import { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { generateMockLoadData } from '@/lib/curve-utils';
+import { TimePeriod } from '@/types/curve';
+import { generateMockAdjustableLoadData } from '@/lib/curve-utils';
 
 interface Props {
+  periods: TimePeriod[];
+  showActual?: boolean;
   chartHeight?: number;
 }
 
@@ -20,8 +23,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-const LoadChart = ({ chartHeight = 400 }: Props) => {
-  const data = useMemo(() => generateMockLoadData(), []);
+const AdjustableLoadChart = ({ periods, showActual = false, chartHeight = 400 }: Props) => {
+  const data = useMemo(() => generateMockAdjustableLoadData(periods), [periods]);
 
   return (
     <div style={{ height: chartHeight }} className="w-full">
@@ -32,11 +35,14 @@ const LoadChart = ({ chartHeight = 400 }: Props) => {
           <YAxis tick={{ fontSize: 10 }} label={{ value: '功率 (kW)', angle: -90, position: 'insideLeft', fontSize: 11 }} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
-          <Line type="monotone" dataKey="actual" name="负荷实际功率" stroke="hsl(210 70% 50%)" strokeWidth={2} dot={false} />
+          <Line type="stepAfter" dataKey="plan" name="计划功率" stroke="hsl(35 90% 50%)" strokeWidth={2} dot={false} />
+          {showActual && (
+            <Line type="monotone" dataKey="actual" name="实际功率" stroke="hsl(35 70% 70%)" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
+          )}
         </LineChart>
       </ResponsiveContainer>
     </div>
   );
 };
 
-export default LoadChart;
+export default AdjustableLoadChart;
