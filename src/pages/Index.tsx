@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Download, Plus, Filter } from 'lucide-react';
 import { useState, useMemo, useCallback } from 'react';
-import { CurveStatus, ProjectType } from '@/types/curve';
+import { CurveStatus, PredictionStatus, ProjectType, PREDICTION_STATUS_LABELS } from '@/types/curve';
 import { format } from 'date-fns';
 import { StrategySummaryCards, CurveTypeKey, StrategyStats } from '@/components/list/StrategySummaryCards';
 
@@ -20,9 +20,9 @@ interface CurveRecord {
   projectType: ProjectType;
   curveDate: string;
   storageStatus: CurveStatus | null;
-  pvStatus: CurveStatus | null;
+  pvPredictionStatus: PredictionStatus | null;
   adjustableLoadStatus: CurveStatus | null;
-  nonAdjustableLoadStatus: CurveStatus | null;
+  nonAdjLoadPredictionStatus: PredictionStatus | null;
   lastSentOrGeneratedAt: string | null;
   operator: string | null;
 }
@@ -36,24 +36,30 @@ interface ProjectInfo {
   hasNonAdjustableLoad: boolean;
 }
 
-const STATUS_BADGE: Record<CurveStatus, { label: string; className: string }> = {
+const DISPATCH_STATUS_BADGE: Record<CurveStatus, { label: string; className: string }> = {
   sent: { label: '成功', className: 'bg-status-success text-primary-foreground' },
   pending: { label: '待下发', className: 'bg-status-pending text-primary-foreground' },
   failed: { label: '失败', className: 'bg-destructive text-destructive-foreground' },
 };
 
+const PREDICTION_STATUS_BADGE: Record<PredictionStatus, { label: string; className: string }> = {
+  generated: { label: '已生成', className: 'bg-status-success text-primary-foreground' },
+  generation_failed: { label: '生成失败', className: 'bg-destructive text-destructive-foreground' },
+  none: { label: '—', className: '' },
+};
+
 const MOCK_RECORDS: CurveRecord[] = [
-  { id: '1', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-10', storageStatus: 'pending', pvStatus: null, adjustableLoadStatus: null, nonAdjustableLoadStatus: null, lastSentOrGeneratedAt: null, operator: null },
-  { id: '2', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-09', storageStatus: 'sent', pvStatus: null, adjustableLoadStatus: null, nonAdjustableLoadStatus: null, lastSentOrGeneratedAt: '2026-03-08 08:00:00', operator: '王工' },
-  { id: '3', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-07', storageStatus: 'sent', pvStatus: null, adjustableLoadStatus: null, nonAdjustableLoadStatus: null, lastSentOrGeneratedAt: '2026-03-06 08:00:00', operator: '系统' },
-  { id: '4', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-10', storageStatus: 'pending', pvStatus: 'pending', adjustableLoadStatus: null, nonAdjustableLoadStatus: null, lastSentOrGeneratedAt: null, operator: null },
-  { id: '5', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-09', storageStatus: 'sent', pvStatus: 'sent', adjustableLoadStatus: null, nonAdjustableLoadStatus: null, lastSentOrGeneratedAt: '2026-03-08 08:30:00', operator: '张工' },
-  { id: '6', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-08', storageStatus: 'sent', pvStatus: 'sent', adjustableLoadStatus: null, nonAdjustableLoadStatus: null, lastSentOrGeneratedAt: '2026-03-07 08:00:00', operator: '系统' },
-  { id: '7', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-06', storageStatus: 'failed', pvStatus: 'failed', adjustableLoadStatus: null, nonAdjustableLoadStatus: null, lastSentOrGeneratedAt: '2026-03-05 08:00:00', operator: '系统' },
-  { id: '8', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-10', storageStatus: 'pending', pvStatus: 'pending', adjustableLoadStatus: 'pending', nonAdjustableLoadStatus: 'sent', lastSentOrGeneratedAt: '2026-03-09 20:00:00', operator: '系统' },
-  { id: '9', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-09', storageStatus: 'sent', pvStatus: 'sent', adjustableLoadStatus: 'sent', nonAdjustableLoadStatus: 'sent', lastSentOrGeneratedAt: '2026-03-08 09:15:00', operator: '李工' },
-  { id: '10', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-07', storageStatus: 'failed', pvStatus: 'failed', adjustableLoadStatus: 'failed', nonAdjustableLoadStatus: 'sent', lastSentOrGeneratedAt: '2026-03-06 09:15:00', operator: '李工' },
-  { id: '11', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-05', storageStatus: 'sent', pvStatus: 'sent', adjustableLoadStatus: 'sent', nonAdjustableLoadStatus: 'sent', lastSentOrGeneratedAt: '2026-03-04 08:00:00', operator: '系统' },
+  { id: '1', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-10', storageStatus: 'pending', pvPredictionStatus: null, adjustableLoadStatus: null, nonAdjLoadPredictionStatus: null, lastSentOrGeneratedAt: null, operator: null },
+  { id: '2', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-09', storageStatus: 'sent', pvPredictionStatus: null, adjustableLoadStatus: null, nonAdjLoadPredictionStatus: null, lastSentOrGeneratedAt: '2026-03-08 08:00:00', operator: '王工' },
+  { id: '3', projectName: '纯储能测试站', projectType: 'A', curveDate: '2026-03-07', storageStatus: 'sent', pvPredictionStatus: null, adjustableLoadStatus: null, nonAdjLoadPredictionStatus: null, lastSentOrGeneratedAt: '2026-03-06 08:00:00', operator: '系统' },
+  { id: '4', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-10', storageStatus: 'pending', pvPredictionStatus: 'generated', adjustableLoadStatus: null, nonAdjLoadPredictionStatus: null, lastSentOrGeneratedAt: null, operator: null },
+  { id: '5', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-09', storageStatus: 'sent', pvPredictionStatus: 'generated', adjustableLoadStatus: null, nonAdjLoadPredictionStatus: null, lastSentOrGeneratedAt: '2026-03-08 08:30:00', operator: '张工' },
+  { id: '6', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-08', storageStatus: 'sent', pvPredictionStatus: 'generated', adjustableLoadStatus: null, nonAdjLoadPredictionStatus: null, lastSentOrGeneratedAt: '2026-03-07 08:00:00', operator: '系统' },
+  { id: '7', projectName: '示范储能电站一期', projectType: 'B', curveDate: '2026-03-06', storageStatus: 'failed', pvPredictionStatus: 'generation_failed', adjustableLoadStatus: null, nonAdjLoadPredictionStatus: null, lastSentOrGeneratedAt: '2026-03-05 08:00:00', operator: '系统' },
+  { id: '8', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-10', storageStatus: 'pending', pvPredictionStatus: 'generated', adjustableLoadStatus: 'pending', nonAdjLoadPredictionStatus: 'generated', lastSentOrGeneratedAt: '2026-03-09 20:00:00', operator: '系统' },
+  { id: '9', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-09', storageStatus: 'sent', pvPredictionStatus: 'generated', adjustableLoadStatus: 'sent', nonAdjLoadPredictionStatus: 'generated', lastSentOrGeneratedAt: '2026-03-08 09:15:00', operator: '李工' },
+  { id: '10', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-07', storageStatus: 'failed', pvPredictionStatus: 'generated', adjustableLoadStatus: 'failed', nonAdjLoadPredictionStatus: 'generation_failed', lastSentOrGeneratedAt: '2026-03-06 09:15:00', operator: '李工' },
+  { id: '11', projectName: '朝6-605站', projectType: 'C', curveDate: '2026-03-05', storageStatus: 'sent', pvPredictionStatus: 'generated', adjustableLoadStatus: 'sent', nonAdjLoadPredictionStatus: 'generated', lastSentOrGeneratedAt: '2026-03-04 08:00:00', operator: '系统' },
 ];
 
 const ALL_PROJECTS: ProjectInfo[] = [
@@ -62,9 +68,17 @@ const ALL_PROJECTS: ProjectInfo[] = [
   { name: '朝6-605站', type: 'C', hasStorage: true, hasPv: true, hasAdjustableLoad: true, hasNonAdjustableLoad: true },
 ];
 
-function StatusCell({ status }: { status: CurveStatus | null }) {
+/** Dispatch status cell (储能计划 / 可调负荷计划) */
+function DispatchStatusCell({ status }: { status: CurveStatus | null }) {
   if (status === null) return <span className="text-muted-foreground">—</span>;
-  const cfg = STATUS_BADGE[status];
+  const cfg = DISPATCH_STATUS_BADGE[status];
+  return <Badge className={cfg.className}>{cfg.label}</Badge>;
+}
+
+/** Prediction status cell (光伏预测 / 不可调负荷预测) */
+function PredictionStatusCell({ status }: { status: PredictionStatus | null }) {
+  if (status === null || status === 'none') return <span className="text-muted-foreground">—</span>;
+  const cfg = PREDICTION_STATUS_BADGE[status];
   return <Badge className={cfg.className}>{cfg.label}</Badge>;
 }
 
@@ -130,14 +144,43 @@ const Index = () => {
     const projectsWithAdjLoad = ALL_PROJECTS.filter(p => p.hasAdjustableLoad).length;
     const projectsWithNonAdjLoad = ALL_PROJECTS.filter(p => p.hasNonAdjustableLoad).length;
 
-    const count = (field: keyof CurveRecord, status: CurveStatus) =>
+    // Dispatch status counts (storage, adjustableLoad)
+    const countDispatch = (field: 'storageStatus' | 'adjustableLoadStatus', status: CurveStatus) =>
+      MOCK_RECORDS.filter(r => r[field] === status).length;
+
+    // Prediction status counts (pv, nonAdjLoad)
+    const countPrediction = (field: 'pvPredictionStatus' | 'nonAdjLoadPredictionStatus', status: PredictionStatus) =>
       MOCK_RECORDS.filter(r => r[field] === status).length;
 
     return [
-      { type: 'storage', label: '储能计划', icon: null, projectCount: projectsWithStorage, success: count('storageStatus', 'sent'), failed: count('storageStatus', 'failed'), pending: count('storageStatus', 'pending') },
-      { type: 'pv', label: '光伏预测', icon: null, projectCount: projectsWithPv, success: count('pvStatus', 'sent'), failed: count('pvStatus', 'failed'), pending: count('pvStatus', 'pending') },
-      { type: 'adjustableLoad', label: '可调负荷计划', icon: null, projectCount: projectsWithAdjLoad, success: count('adjustableLoadStatus', 'sent'), failed: count('adjustableLoadStatus', 'failed'), pending: count('adjustableLoadStatus', 'pending') },
-      { type: 'nonAdjustableLoad', label: '不可调负荷预测', icon: null, projectCount: projectsWithNonAdjLoad, success: count('nonAdjustableLoadStatus', 'sent'), failed: count('nonAdjustableLoadStatus', 'failed'), pending: count('nonAdjustableLoadStatus', 'pending') },
+      {
+        type: 'storage', label: '储能计划', icon: null, projectCount: projectsWithStorage,
+        success: countDispatch('storageStatus', 'sent'),
+        failed: countDispatch('storageStatus', 'failed'),
+        pending: countDispatch('storageStatus', 'pending'),
+        isPrediction: false,
+      },
+      {
+        type: 'pv', label: '光伏预测', icon: null, projectCount: projectsWithPv,
+        success: countPrediction('pvPredictionStatus', 'generated'),
+        failed: countPrediction('pvPredictionStatus', 'generation_failed'),
+        pending: 0,
+        isPrediction: true,
+      },
+      {
+        type: 'adjustableLoad', label: '可调负荷计划', icon: null, projectCount: projectsWithAdjLoad,
+        success: countDispatch('adjustableLoadStatus', 'sent'),
+        failed: countDispatch('adjustableLoadStatus', 'failed'),
+        pending: countDispatch('adjustableLoadStatus', 'pending'),
+        isPrediction: false,
+      },
+      {
+        type: 'nonAdjustableLoad', label: '不可调负荷预测', icon: null, projectCount: projectsWithNonAdjLoad,
+        success: countPrediction('nonAdjLoadPredictionStatus', 'generated'),
+        failed: countPrediction('nonAdjLoadPredictionStatus', 'generation_failed'),
+        pending: 0,
+        isPrediction: true,
+      },
     ];
   }, []);
 
@@ -321,10 +364,10 @@ const Index = () => {
                     <TableCell className="font-medium">{project.name}</TableCell>
                     <TableCell><CurveTypeTags project={project} /></TableCell>
                     <TableCell>{latestRecord?.curveDate ?? '—'}</TableCell>
-                    <TableCell><StatusCell status={latestRecord?.storageStatus ?? null} /></TableCell>
-                    <TableCell><StatusCell status={project.hasPv ? (latestRecord?.pvStatus ?? null) : null} /></TableCell>
-                    <TableCell><StatusCell status={project.hasAdjustableLoad ? (latestRecord?.adjustableLoadStatus ?? null) : null} /></TableCell>
-                    <TableCell><StatusCell status={project.hasNonAdjustableLoad ? (latestRecord?.nonAdjustableLoadStatus ?? null) : null} /></TableCell>
+                    <TableCell><DispatchStatusCell status={latestRecord?.storageStatus ?? null} /></TableCell>
+                    <TableCell><PredictionStatusCell status={project.hasPv ? (latestRecord?.pvPredictionStatus ?? null) : null} /></TableCell>
+                    <TableCell><DispatchStatusCell status={project.hasAdjustableLoad ? (latestRecord?.adjustableLoadStatus ?? null) : null} /></TableCell>
+                    <TableCell><PredictionStatusCell status={project.hasNonAdjustableLoad ? (latestRecord?.nonAdjLoadPredictionStatus ?? null) : null} /></TableCell>
                     <TableCell className="text-sm text-muted-foreground">{latestRecord?.lastSentOrGeneratedAt ?? '—'}</TableCell>
                     <TableCell>{latestRecord?.operator ?? '—'}</TableCell>
                     <TableCell>

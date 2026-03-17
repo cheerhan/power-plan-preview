@@ -11,6 +11,7 @@ export interface StrategyStats {
   success: number;
   failed: number;
   pending: number;
+  isPrediction?: boolean;
 }
 
 interface Props {
@@ -46,6 +47,7 @@ export function StrategySummaryCards({ stats, activeType, onToggle }: Props) {
       {stats.map(s => {
         const isActive = activeType === s.type;
         const total = s.success + s.failed + s.pending;
+        const isPred = s.isPrediction;
         return (
           <button
             key={s.type}
@@ -89,20 +91,22 @@ export function StrategySummaryCards({ stats, activeType, onToggle }: Props) {
               </div>
             )}
 
-            {/* Stats numbers */}
+            {/* Stats numbers - different labels for prediction vs dispatch */}
             <div className="flex gap-4 text-xs">
               <span className="flex items-center gap-1">
                 <span className="inline-block w-2 h-2 rounded-full bg-status-success" />
-                成功 <span className="font-medium text-foreground">{s.success}</span>
+                {isPred ? '已生成' : '成功'} <span className="font-medium text-foreground">{s.success}</span>
               </span>
               <span className="flex items-center gap-1">
                 <span className="inline-block w-2 h-2 rounded-full bg-destructive" />
-                失败 <span className="font-medium text-foreground">{s.failed}</span>
+                {isPred ? '生成失败' : '失败'} <span className="font-medium text-foreground">{s.failed}</span>
               </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block w-2 h-2 rounded-full bg-status-pending" />
-                待下发 <span className="font-medium text-foreground">{s.pending}</span>
-              </span>
+              {!isPred && (
+                <span className="flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 rounded-full bg-status-pending" />
+                  待下发 <span className="font-medium text-foreground">{s.pending}</span>
+                </span>
+              )}
             </div>
           </button>
         );

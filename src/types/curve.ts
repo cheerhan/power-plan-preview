@@ -1,5 +1,6 @@
 export type ActionType = 'charge' | 'discharge' | 'idle';
 export type CurveStatus = 'sent' | 'pending' | 'failed';
+export type PredictionStatus = 'generated' | 'generation_failed' | 'none';
 export type ProjectType = 'A' | 'B' | 'C'; // A=纯储能, B=光储, C=光储荷
 
 export interface TimePeriod {
@@ -32,6 +33,8 @@ export interface CurveDetail {
   hasPv: boolean;
   hasAdjustableLoad: boolean;
   hasNonAdjustableLoad: boolean;
+  pvPredictionStatus?: PredictionStatus;
+  nonAdjLoadPredictionStatus?: PredictionStatus;
   periods: TimePeriod[];
   adjustableLoadPeriods?: TimePeriod[];
   projectParams: ProjectParams;
@@ -62,6 +65,12 @@ export const STATUS_LABELS: Record<CurveStatus, string> = {
   sent: '成功',
   pending: '待下发',
   failed: '失败',
+};
+
+export const PREDICTION_STATUS_LABELS: Record<PredictionStatus, string> = {
+  generated: '已生成',
+  generation_failed: '生成失败',
+  none: '—',
 };
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
