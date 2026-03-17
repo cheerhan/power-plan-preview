@@ -106,9 +106,9 @@ const LoadCombinedChart = ({
               <Tooltip content={<CustomTooltip />} />
               <Legend />
               <Line type="stepAfter" dataKey="adjPlan" name="可调计划" stroke="hsl(35 90% 50%)" strokeWidth={2} dot={false} />
-              {showActual && <Line type="monotone" dataKey="adjActual" name="可调实际" stroke="hsl(35 70% 70%)" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />}
+              <Line type="monotone" dataKey="adjActual" name="可调实际" stroke="hsl(35 70% 70%)" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
               <Line type="monotone" dataKey="nonAdjPlan" name="不可调预测" stroke="hsl(210 70% 50%)" strokeWidth={2} dot={false} />
-              {showActual && <Line type="monotone" dataKey="nonAdjActual" name="不可调实际" stroke="hsl(210 50% 70%)" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />}
+              <Line type="monotone" dataKey="nonAdjActual" name="不可调实际" stroke="hsl(210 50% 70%)" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
             </LineChart>
           ) : activeTab === 'adjustable' ? (
             <LineChart data={adjData} margin={{ top: 8, right: 16, bottom: 16, left: 16 }}>
