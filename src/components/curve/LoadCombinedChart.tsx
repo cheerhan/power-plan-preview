@@ -118,7 +118,7 @@ const LoadCombinedChart = ({
               <Tooltip content={<CustomTooltip />} />
               <Legend />
               <Line type="stepAfter" dataKey="plan" name="计划功率" stroke="hsl(35 90% 50%)" strokeWidth={2} dot={false} />
-              {showActual && <Line type="monotone" dataKey="actual" name="实际功率" stroke="hsl(35 70% 70%)" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />}
+              <Line type="monotone" dataKey="actual" name="实际功率" stroke="hsl(35 70% 70%)" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
             </LineChart>
           ) : (
             <LineChart data={nonAdjData} margin={{ top: 8, right: 16, bottom: 16, left: 16 }}>
