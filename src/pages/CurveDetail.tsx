@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { BarChart3, TableIcon, Zap, Sun, Plug } from 'lucide-react';
+import { BarChart3, TableIcon, Zap, Sun, Plug, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -14,6 +14,9 @@ import CurveDataTable from '@/components/curve/CurveDataTable';
 import ProjectParamsCard from '@/components/curve/ProjectParamsCard';
 import DispatchHistory from '@/components/curve/DispatchHistory';
 import DateSidebar from '@/components/curve/DateSidebar';
+import TouPriceStrip from '@/components/curve/TouPriceStrip';
+import PeriodInsightCards from '@/components/curve/PeriodInsightCards';
+import LoadStationDrawer from '@/components/curve/LoadStationDrawer';
 import { TimePeriod, CurveDetail as CurveDetailType, ProjectType } from '@/types/curve';
 import { validatePeriods, isCurveEditable, isCurveExecuted, getTomorrowDate } from '@/lib/curve-utils';
 import { MOCK_CURVE_DB } from '@/data/mock-curves';
@@ -71,6 +74,7 @@ const CurveDetail = () => {
   const [editing, setEditing] = useState(isNew || shouldEdit);
   const [autoDispatch, setAutoDispatch] = useState(false);
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+  const [loadDrawerOpen, setLoadDrawerOpen] = useState(false);
 
   const editable = useMemo(() => isCurveEditable(data.curveDate), [data.curveDate]);
   const historical = useMemo(() => !isCurveEditable(data.curveDate), [data.curveDate]);
@@ -209,8 +213,10 @@ const CurveDetail = () => {
                     <p className="text-xs text-muted-foreground leading-relaxed">
                       储能系统每日各时段的充电、放电或禁止动作计划，下发到现场控制器后作为次日实际运行依据。
                     </p>
+                    <TouPriceStrip />
                     <PeriodConfigPanel periods={activeStoragePeriods} onChange={setPeriods} disabled={!editing} />
                     <EnergyStorageChart periods={activeStoragePeriods} showActual={showActual} chartHeight={260} />
+                    <PeriodInsightCards periods={activeStoragePeriods} />
                   </CardContent>
                 </Card>
 
@@ -241,20 +247,34 @@ const CurveDetail = () => {
                 {hasLoad && (
                   <Card className="border-panel-border shadow-sm">
                     <CardHeader className="pb-2 px-4 pt-3">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-status-pending/20">
-                          <Plug className="h-3.5 w-3.5 text-status-pending" />
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-status-pending/20">
+                            <Plug className="h-3.5 w-3.5 text-status-pending" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-sm font-semibold">负荷曲线</CardTitle>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {data.hasAdjustableLoad && data.hasNonAdjustableLoad
+                                ? '可调计划（可执行） + 不可调预测（参考）'
+                                : data.hasAdjustableLoad
+                                  ? '可调负荷计划 · 可执行'
+                                  : '不可调负荷预测 · 参考数据'}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <CardTitle className="text-sm font-semibold">负荷曲线</CardTitle>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {data.hasAdjustableLoad && data.hasNonAdjustableLoad
-                              ? '可调计划（可执行） + 不可调预测（参考）'
-                              : data.hasAdjustableLoad
-                                ? '可调负荷计划 · 可执行'
-                                : '不可调负荷预测 · 参考数据'}
-                          </p>
-                        </div>
+                        {data.hasAdjustableLoad && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 gap-1.5 text-xs"
+                            onClick={() => setLoadDrawerOpen(true)}
+                            disabled={!editing}
+                          >
+                            <Settings2 className="h-3.5 w-3.5" />
+                            编辑设备排班
+                          </Button>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-3">
@@ -285,6 +305,8 @@ const CurveDetail = () => {
           </div>
         </div>
       </div>
+
+      <LoadStationDrawer open={loadDrawerOpen} onOpenChange={setLoadDrawerOpen} />
     </div>
   );
 };
