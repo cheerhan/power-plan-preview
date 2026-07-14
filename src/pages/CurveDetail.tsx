@@ -212,10 +212,8 @@ const CurveDetail = () => {
                     <p className="text-xs text-muted-foreground leading-relaxed">
                       储能系统每日各时段的充电、放电或禁止动作计划，下发到现场控制器后作为次日实际运行依据。
                     </p>
-                    <TouPriceStrip />
                     <PeriodConfigPanel periods={activeStoragePeriods} onChange={setPeriods} disabled={!editing} />
                     <EnergyStorageChart periods={activeStoragePeriods} showActual={showActual} chartHeight={260} />
-                    <PeriodInsightCards periods={activeStoragePeriods} />
                   </CardContent>
                 </Card>
 
