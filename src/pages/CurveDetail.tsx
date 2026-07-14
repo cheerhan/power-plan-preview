@@ -170,6 +170,8 @@ const CurveDetail = () => {
         {/* Main content area */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-[1200px] mx-auto px-4 py-3 space-y-3">
+            <PlanInterpretationBanner projectType={data.projectType} projectName={data.projectName} />
+
 
             {/* View mode toggle */}
             <div className="flex items-center justify-end gap-1">
