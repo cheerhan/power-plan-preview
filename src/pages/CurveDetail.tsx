@@ -268,7 +268,6 @@ const CurveDetail = () => {
                             variant="outline"
                             className="h-7 gap-1.5 text-xs"
                             onClick={() => setLoadDrawerOpen(true)}
-                            disabled={!editing}
                           >
                             <Settings2 className="h-3.5 w-3.5" />
                             编辑设备排班
