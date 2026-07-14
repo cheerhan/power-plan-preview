@@ -14,9 +14,8 @@ import CurveDataTable from '@/components/curve/CurveDataTable';
 import ProjectParamsCard from '@/components/curve/ProjectParamsCard';
 import DispatchHistory from '@/components/curve/DispatchHistory';
 import DateSidebar from '@/components/curve/DateSidebar';
-import TouPriceStrip from '@/components/curve/TouPriceStrip';
-import PeriodInsightCards from '@/components/curve/PeriodInsightCards';
 import LoadStationDrawer from '@/components/curve/LoadStationDrawer';
+import PlanInterpretationBanner from '@/components/curve/PlanInterpretationBanner';
 import { TimePeriod, CurveDetail as CurveDetailType, ProjectType } from '@/types/curve';
 import { validatePeriods, isCurveEditable, isCurveExecuted, getTomorrowDate } from '@/lib/curve-utils';
 import { MOCK_CURVE_DB } from '@/data/mock-curves';
@@ -171,6 +170,8 @@ const CurveDetail = () => {
         {/* Main content area */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-[1200px] mx-auto px-4 py-3 space-y-3">
+            <PlanInterpretationBanner projectType={data.projectType} projectName={data.projectName} />
+
 
             {/* View mode toggle */}
             <div className="flex items-center justify-end gap-1">
@@ -213,10 +214,8 @@ const CurveDetail = () => {
                     <p className="text-xs text-muted-foreground leading-relaxed">
                       储能系统每日各时段的充电、放电或禁止动作计划，下发到现场控制器后作为次日实际运行依据。
                     </p>
-                    <TouPriceStrip />
                     <PeriodConfigPanel periods={activeStoragePeriods} onChange={setPeriods} disabled={!editing} />
                     <EnergyStorageChart periods={activeStoragePeriods} showActual={showActual} chartHeight={260} />
-                    <PeriodInsightCards periods={activeStoragePeriods} />
                   </CardContent>
                 </Card>
 
